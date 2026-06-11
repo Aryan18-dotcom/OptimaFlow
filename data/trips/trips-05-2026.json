@@ -1,0 +1,31 @@
+[
+  {
+    "currentDay": "11-May",
+    "trips": [
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781159385132-MAY",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "NJ(MT)-SuryaShree(LD)"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781159346070-MAY",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "SuryaShree(MT)-NJ(LD)"
+      },
+      {
+        "id": "TRIP-GJ-18AU-9762-1781159297039-MAY",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Vastrapur(MT)-Phenix(LD)"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781159329467-MAY",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Baroda(MT)-GACL(LD)[Vatva]"
+      }
+    ]
+  }
+]

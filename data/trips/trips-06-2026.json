@@ -1,0 +1,303 @@
+[
+  {
+    "currentDay": "1-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781157785616",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Phenix(LD)[Kashindra]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781157811641",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Phenix(LD)[Kalol]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781157857113",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "Manjusar(LD)[SuryaShree]"
+      }
+    ]
+  },
+  {
+    "currentDay": "2-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158087072",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Phenix(LD)"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158115751",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "NJ(LD)[Baroda]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158138453",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "SuryaShree(LD)[Shilaj]"
+      }
+    ]
+  },
+  {
+    "currentDay": "3-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158229280",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Phenix(LD)[Panchvati]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158271972",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Baroda(MT)-Manjusar(LD)[SuryaShree]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158305423",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "Shilaj(LD)[SuryaShree]"
+      }
+    ]
+  },
+  {
+    "currentDay": "4-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158339490",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Panchvati(MT)-Phenix(LD)[Ishanpur]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158375937",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "SurayShree(MT)-Phenix(LD)[Zunadal]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781158416796",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "Odahv(MT)[NJ]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158463701",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "SurayShree(LD)[G.Nager]"
+      }
+    ]
+  },
+  {
+    "currentDay": "5-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158495903",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Ishanpur(MT)-Phenix(LD)[Tragad]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158524559",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Zunadal(MT)-Phenix(LD)[Thantej]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781158539810",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "NJ(LD)[Baroda]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158562836",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "G.Nager(MT)[SurayShree]"
+      }
+    ]
+  },
+  {
+    "currentDay": "6-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158590278",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Tragad(MT)-Phenix(LD)[Kalupur]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158619611",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Thaltej(MT)-Phenix(LD)[Aslali]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781158648553",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "Baroda(MT)-Manjusar(LD)[SurayShree]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158669865",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "SurayShree(LD)[Iscon]"
+      }
+    ]
+  },
+  {
+    "currentDay": "7-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158724063",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Kalupur(MT)[NOT UNLOADED]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158824814",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Aslali(MT)-Bakrol(LD)[NJ]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781158851237",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "SurayShree(MT)-NJ(LD)[Baroda]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158884783",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "Iscon(MT)-SuryaShree(LD)[G.Nager]"
+      }
+    ]
+  },
+  {
+    "currentDay": "8-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781158919122",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Kalupur(MT)-Phenix(LD)[Tragad]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781158941364",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "NJ(MT)-Phenix(LD)[Zundal]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781158973400",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "Baroda(MT)-Manjusar(LD)[SuryaShree]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781158998742",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "G.Nager(MT)[SuryaShree]"
+      }
+    ]
+  },
+  {
+    "currentDay": "9-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781159031843",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Tragad(MT)-Phenix(LD)[Shela]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781159065528",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Zuandal(MT)-Phenix(LD)[V.Devi]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781159105640",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "SuryaShree(MT)-NJ(LD)[Baroda(Bhayali)]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781159124321",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "SurayShree(LD)[G.Nager]"
+      }
+    ]
+  },
+  {
+    "currentDay": "10-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781159150024",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Shela(MT)-Phenix(LD)[Vastrapur]"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781159192454",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "V.Devi(MT)-NJ(LD)[Baroda(Savali)]"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781159225270",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "Bhayali(MT)-Manjusar(LD)[SuryaShree]"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781159266748",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "G.Nager(MT)-Bakrol(LD)[NJ]"
+      }
+    ]
+  },
+  {
+    "currentDay": "11-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781159385132",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "NJ(MT)-SuryaShree(LD)"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781159346070",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "SuryaShree(MT)-NJ(LD)"
+      },
+      {
+        "id": "TRIP-GJ-18AU-9762-1781159297039",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Vastrapur(MT)-Phenix(LD)"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781159329467",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "Baroda(MT)-GACL(LD)[Vatva]"
+      }
+    ]
+  }
+]

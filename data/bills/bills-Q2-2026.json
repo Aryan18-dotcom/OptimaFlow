@@ -1,0 +1,34 @@
+[
+  {
+    "id": "BILL-LR-4607",
+    "tripId": "TRIP-GJ-27U-5399-1781159329467-MAY",
+    "date": "11-May",
+    "vehicleNumber": "GJ-27U-5399",
+    "routeSequence": "Baroda(MT)-GACL(LD)[Vatva]",
+    "destination": "Vatva",
+    "lrNumber": "LR-1",
+    "details": "Wt: 25.41 MT | Rate: ₹2000",
+    "partyName": "Trial Company",
+    "baseFreight": 50820,
+    "tollCharges": 0,
+    "loadingCharges": 0,
+    "totalAmount": 50820,
+    "status": "Pending Invoice"
+  },
+  {
+    "id": "BILL-LR-3252",
+    "tripId": "TRIP-GJ-27U-5399-1781159329467",
+    "date": "11-Jun",
+    "vehicleNumber": "GJ-27U-5399",
+    "routeSequence": "Baroda(MT)-GACL(LD)[Vatva]",
+    "destination": "Vatva",
+    "lrNumber": "LR-2",
+    "details": "Wt: 0 MT | Rate: ₹0",
+    "partyName": "Trial Company",
+    "baseFreight": 0,
+    "tollCharges": 0,
+    "loadingCharges": 0,
+    "totalAmount": 0,
+    "status": "Pending Invoice"
+  }
+]

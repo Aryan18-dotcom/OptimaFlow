@@ -1,0 +1,108 @@
+{
+  "drivers": [
+    {
+      "id": "DRV-9897-7166",
+      "name": "Sorab",
+      "phone": "9519717166",
+      "status": "active"
+    },
+    {
+      "id": "DRV-3351-7786",
+      "name": "Zahid",
+      "phone": "9142047786",
+      "status": "active"
+    },
+    {
+      "id": "DRV-6977-4542",
+      "name": "Treeth",
+      "phone": "8780744542",
+      "status": "active"
+    },
+    {
+      "id": "DRV-7054-6152",
+      "name": "Yadav",
+      "phone": "7046186152",
+      "status": "active"
+    }
+  ],
+  "trucks": [
+    {
+      "id": "TRK-0338",
+      "plateNumber": "GJ-01CX-5282",
+      "model": "Full Body",
+      "ownerName": "Bhumika Chheda",
+      "status": "inActive",
+      "directDriverId": ""
+    },
+    {
+      "id": "TRK-8324",
+      "plateNumber": "GJ-18AU-9762",
+      "model": "Full Body",
+      "ownerName": "Zaveri Chheda",
+      "status": "active",
+      "directDriverId": "DRV-3351-7786"
+    },
+    {
+      "id": "TRK-8052",
+      "plateNumber": "GJ-27U-5399",
+      "model": "Half Body",
+      "ownerName": "Bhumika Chheda",
+      "status": "active",
+      "directDriverId": "DRV-9897-7166"
+    },
+    {
+      "id": "TRK-5248",
+      "plateNumber": "GJ-26T-9919",
+      "model": "Full Body",
+      "ownerName": "Damji Chheda",
+      "status": "inActive",
+      "directDriverId": ""
+    },
+    {
+      "id": "TRK-0431",
+      "plateNumber": "GJ-01DX-2466",
+      "model": "Full Body",
+      "ownerName": "Damji Chheda",
+      "status": "active",
+      "directDriverId": "DRV-6977-4542"
+    },
+    {
+      "id": "TRK-6693",
+      "plateNumber": "GJ-06-AV-8075",
+      "model": "Full Body",
+      "ownerName": "Dharmesh Chheda",
+      "status": "active",
+      "directDriverId": "DRV-7054-6152"
+    },
+    {
+      "id": "TRK-0428",
+      "plateNumber": "GJ-01DY-2107",
+      "model": "Full Body",
+      "ownerName": "Dharmesh Chheda",
+      "status": "inActive",
+      "directDriverId": ""
+    }
+  ],
+  "assignments": [
+    {
+      "truckId": "TRK-8324",
+      "driverId": "DRV-3351-7786",
+      "assignedAt": "2026-06-10T09:32:48.338Z"
+    },
+    {
+      "truckId": "TRK-8052",
+      "driverId": "DRV-9897-7166",
+      "assignedAt": "2026-06-10T09:33:28.066Z"
+    },
+    {
+      "truckId": "TRK-0431",
+      "driverId": "DRV-6977-4542",
+      "assignedAt": "2026-06-10T09:34:40.446Z"
+    },
+    {
+      "truckId": "TRK-6693",
+      "driverId": "DRV-7054-6152",
+      "assignedAt": "2026-06-10T09:35:16.720Z"
+    }
+  ]
+}
