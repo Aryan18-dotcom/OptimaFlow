@@ -278,25 +278,54 @@
         "id": "TRIP-GJ-06-AV-8075-1781159385132",
         "vehicleNumber": "GJ-06-AV-8075",
         "driverName": "Yadav",
-        "routeSequence": "NJ(MT)-SuryaShree(LD)"
+        "routeSequence": "NJ(MT)-SuryaShree(MT)[NJ]-NJ(LD)[Baroda]"
       },
       {
         "id": "TRIP-GJ-01DX-2466-1781159346070",
         "vehicleNumber": "GJ-01DX-2466",
         "driverName": "Treeth",
-        "routeSequence": "SuryaShree(MT)-NJ(LD)"
+        "routeSequence": "SuryaShree(MT)-NJ(LD)[Baroda]"
       },
       {
         "id": "TRIP-GJ-18AU-9762-1781159297039",
         "vehicleNumber": "GJ-18AU-9762",
         "driverName": "Zahid",
-        "routeSequence": "Vastrapur(MT)-Phenix(LD)"
+        "routeSequence": "Vastrapur(MT)-Phenix(LD)[Pesapur Chowkdi]"
       },
       {
         "id": "TRIP-GJ-27U-5399-1781159329467",
         "vehicleNumber": "GJ-27U-5399",
         "driverName": "Sorab",
         "routeSequence": "Baroda(MT)-GACL(LD)[Vatva]"
+      }
+    ]
+  },
+  {
+    "currentDay": "12-Jun",
+    "trips": [
+      {
+        "id": "TRIP-GJ-18AU-9762-1781244743245",
+        "vehicleNumber": "GJ-18AU-9762",
+        "driverName": "Zahid",
+        "routeSequence": "Pethapur(MT)-Phenix(LD)"
+      },
+      {
+        "id": "TRIP-GJ-27U-5399-1781244811996",
+        "vehicleNumber": "GJ-27U-5399",
+        "driverName": "Sorab",
+        "routeSequence": "GLDC(LD)[Vatva]-Vata(MT)"
+      },
+      {
+        "id": "TRIP-GJ-01DX-2466-1781244896495",
+        "vehicleNumber": "GJ-01DX-2466",
+        "driverName": "Treeth",
+        "routeSequence": "Baroda(MT)"
+      },
+      {
+        "id": "TRIP-GJ-06-AV-8075-1781244913747",
+        "vehicleNumber": "GJ-06-AV-8075",
+        "driverName": "Yadav",
+        "routeSequence": "Baroda(MT)"
       }
     ]
   }

@@ -4,6 +4,7 @@ import "./globals.css";
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from "./components/Navbar";
 import { ToastContainer } from "react-toastify";
+import { headers } from "next/headers";
 
 // Inter handles the dense data tables, amounts, and body text
 const inter = Inter({
@@ -24,11 +25,8 @@ export const metadata: Metadata = {
   description: "Automate daily route notary, invoices, and billing directly from your Google Sheets.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+
   return (
     <html
       lang="en"
