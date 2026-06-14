@@ -218,7 +218,7 @@ export default function ConfigManage() {
                   <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-4">Active Operations Roster</h3>
                   
                   {/* Mobile Card View */}
-                  <div className="block lg:hidden space-y-3 max-h-[500px] overflow-y-auto">
+                  <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
                     {drivers.map(driver => (
                       <div key={driver.id} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-white">
                         <div>
@@ -366,7 +366,7 @@ export default function ConfigManage() {
                   <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-4">Freight Asset Ledger</h3>
                   
                   {/* Mobile Card View */}
-                  <div className="block lg:hidden space-y-3 max-h-[500px] overflow-y-auto">
+                  <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
                     {trucks.map(truck => (
                       <div key={truck.id} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-white">
                         <div>
@@ -500,7 +500,7 @@ export default function ConfigManage() {
                 {/* Operations Status Board Mapping Display - Responsive Cards */}
                 <div className="lg:flex-1">
                   <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-4">Current Active Fleet Pairings</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-125 overflow-y-auto">
                     {trucks.length === 0 ? (
                       <div className="col-span-2 text-center text-slate-400 text-xs py-8">No trucks available</div>
                     ) : (
@@ -518,7 +518,7 @@ export default function ConfigManage() {
                                   {truck.status}
                                 </span>
                               </div>
-                              <h4 className="font-mono text-base sm:text-lg font-bold text-slate-900 mt-1 break-words">{truck.plateNumber}</h4>
+                              <h4 className="font-mono text-base sm:text-lg font-bold text-slate-900 mt-1">{truck.plateNumber}</h4>
                               <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-0.5">
                                 Owner: {truck.ownerName} | Model: {truck.model}
                               </p>
@@ -528,7 +528,7 @@ export default function ConfigManage() {
                               <span className="text-[10px] sm:text-xs text-slate-400 font-medium">Assigned Pilot:</span>
                               {activeDriver ? (
                                 <div className="text-left sm:text-right w-full sm:w-auto">
-                                  <span className="text-[10px] sm:text-xs font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-md inline-block break-words">
+                                  <span className="text-[10px] sm:text-xs font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-md inline-block">
                                     {activeDriver.name}
                                   </span>
                                   <div className="text-[8px] sm:text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-wider">

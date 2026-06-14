@@ -400,7 +400,7 @@ export default function GenerationsHub() {
           ))}
         </div>
 
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-md p-4 sm:p-6 min-h-[460px]">
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-md p-4 sm:p-6 min-h-115">
           <AnimatePresence mode="wait">
 
             {/* TAB 1: OPERATIONAL QUEUE WIZARD */}
@@ -429,7 +429,7 @@ export default function GenerationsHub() {
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-                      <div className="lg:flex-[2] space-y-3 sm:space-y-4">
+                      <div className="lg:flex-2 space-y-3 sm:space-y-4">
                         <input
                           type="text"
                           placeholder="🔍 Filter unbilled logs by vehicle plate number (e.g., 5399)..."
@@ -439,7 +439,7 @@ export default function GenerationsHub() {
                         />
 
                         {/* Mobile Card View for Trips - Visible on mobile */}
-                        <div className="block md:hidden space-y-3 max-h-[400px] overflow-y-auto">
+                        <div className="block md:hidden space-y-3 max-h-100 overflow-y-auto">
                           {filteredUnbilledQueue.map(trip => (
                             <div
                               key={`${trip.id}-${trip.date}`}
@@ -457,7 +457,7 @@ export default function GenerationsHub() {
                                 <span className="text-[10px] text-slate-400">{trip.date}</span>
                               </div>
                               <div className="font-bold text-slate-900 text-sm mb-1">{trip.vehicleNumber}</div>
-                              <div className="text-xs text-slate-600 break-words">{trip.routeSequence}</div>
+                              <div className="text-xs text-slate-600 ">{trip.routeSequence}</div>
                               <div className="text-[10px] text-slate-400 mt-1">Driver: {trip.driverName}</div>
                             </div>
                           ))}
@@ -467,7 +467,7 @@ export default function GenerationsHub() {
                         </div>
 
                         {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-auto max-h-[350px] border rounded-xl bg-white shadow-xs">
+                        <div className="hidden md:block overflow-x-auto max-h-87.5 border rounded-xl bg-white shadow-xs">
                           <table className="w-full text-left border-collapse">
                             <thead>
                               <tr className="border-b text-slate-400 text-xs font-bold bg-neutral-50/80 uppercase">
@@ -506,7 +506,7 @@ export default function GenerationsHub() {
                         <div className="space-y-2">
                           <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Batch Processing Registry</h4>
                           <div className="text-xs bg-white p-3 border rounded-lg space-y-1.5 text-slate-600 font-medium shadow-xs">
-                            <div className="break-words">Carver Target: <strong>Target Client:</strong> {batchPartyName || <span className="text-rose-500 italic">Missing Party*</span>}</div>
+                            <div>Carver Target: <strong>Target Client:</strong> {batchPartyName || <span className="text-rose-500 italic">Missing Party*</span>}</div>
                             <div><strong>Trips Checked:</strong> <span className="text-sky-700 font-bold">{selectedTripIds.length} Rows</span></div>
                           </div>
                         </div>
@@ -530,7 +530,7 @@ export default function GenerationsHub() {
                         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-slate-400">
                           {editingBillId ? "Modifying Registered Bill Row" : "Freight Allocation Ledger"}
                         </span>
-                        <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 mt-0.5 break-words">
+                        <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 mt-0.5 ">
                           {batchPartyName}
                         </h2>
                       </div>
@@ -544,7 +544,7 @@ export default function GenerationsHub() {
                     </div>
 
                     {/* Mobile Card View for Grid Rows */}
-                    <div className="block md:hidden space-y-4 max-h-[500px] overflow-y-auto">
+                    <div className="block md:hidden space-y-4 max-h-125 overflow-y-auto">
                       {gridRows.map((row, index) => {
                         const balance = calculateRowBalance(row);
                         return (
@@ -657,14 +657,14 @@ export default function GenerationsHub() {
 
                     {/* Desktop Table View */}
                     <div className="hidden md:block overflow-x-auto rounded-xl border border-neutral-200 shadow-xs bg-white">
-                      <div className="min-w-[900px] lg:min-w-[1000px]">
+                      <div className="min-w-225 lg:min-w-250">
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr style={{ backgroundColor: `${systemSettings.billUI.themeColor}08` }} className="border-b text-slate-500 text-[10px] lg:text-xs font-bold uppercase tracking-wider">
                               <th className="py-2 lg:py-3 px-2 lg:px-3 w-32 lg:w-40">LR Num <span className="text-rose-500">*</span></th>
                               <th className="py-2 lg:py-3 px-2 lg:px-3 w-24 lg:w-28">Date</th>
                               <th className="py-2 lg:py-3 px-2 lg:px-3 w-28 lg:w-32">Truck Num</th>
-                              <th className="py-2 lg:py-3 px-2 lg:px-3 min-w-[100px]">Destination</th>
+                              <th className="py-2 lg:py-3 px-2 lg:px-3 min-w-25">Destination</th>
                               <th className="py-2 lg:py-3 px-2 lg:px-3 w-20 lg:w-24">Weight (MT)</th>
                               <th className="py-2 lg:py-3 px-2 lg:px-3 w-24 lg:w-28">Rate (₹)</th>
                               <th className="py-2 lg:py-3 px-2 lg:px-3 w-24 lg:w-28">Freight (₹)</th>
@@ -760,7 +760,7 @@ export default function GenerationsHub() {
                     <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 bg-neutral-900 text-white rounded-xl shadow-lg border border-neutral-800">
                       <div className="w-full sm:w-auto">
                         <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 block uppercase tracking-wider">Group Balance Allocation Sum</span>
-                        <div className="text-xl sm:text-2xl font-black text-white font-mono mt-0.5 break-words">
+                        <div className="text-xl sm:text-2xl font-black text-white font-mono mt-0.5 ">
                           ₹ {Math.round(getGridGrandTotal()).toLocaleString("en-IN")}
                         </div>
                       </div>
@@ -787,7 +787,7 @@ export default function GenerationsHub() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
-                  <div className="lg:flex-[2] space-y-4">
+                  <div className="lg:flex-2 space-y-4">
                     <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-neutral-50 p-3 rounded-xl border w-full sm:w-max">
                       <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-500 whitespace-nowrap">Group Matrix By Company:</label>
                       <select value={selectedParty} onChange={e => { setSelectedParty(e.target.value); setSelectedBillIds([]); }} className="bg-white border border-neutral-200 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none w-full sm:w-auto">
@@ -894,7 +894,7 @@ export default function GenerationsHub() {
                       <div className="space-y-3 sm:space-y-4 text-xs font-medium">
                         <div className="bg-white p-3 border rounded-xl space-y-1.5 text-slate-500 shadow-xs">
                           <div><strong>Selected Carrier Runs:</strong> {selectedBillIds.length} Bills Bundled</div>
-                          <div><strong>Billed Client:</strong> <span className="text-slate-900 font-bold break-words">{selectedParty}</span></div>
+                          <div><strong>Billed Client:</strong> <span className="text-slate-900 font-bold ">{selectedParty}</span></div>
                           <div className="pt-2 border-t font-bold text-slate-900 flex justify-between text-xs sm:text-sm">
                             <span>Subtotal Base Net:</span>
                             <span>₹ {bills.filter(b => selectedBillIds.includes(b.id)).reduce((a, b) => a + b.totalAmount, 0).toLocaleString("en-IN")}</span>
@@ -933,7 +933,7 @@ export default function GenerationsHub() {
                       <div className="flex justify-between items-start flex-wrap gap-2">
                         <div>
                           <span className="font-mono text-[9px] sm:text-[10px] font-bold bg-neutral-200 px-2 py-0.5 rounded text-slate-600">{inv.invoiceNumber}</span>
-                          <h4 className="font-bold text-sm sm:text-base text-slate-900 mt-2 break-words">{inv.clientName}</h4>
+                          <h4 className="font-bold text-sm sm:text-base text-slate-900 mt-2 ">{inv.clientName}</h4>
                           <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Tied manifests: {inv.billsBundled.length} items • Issued: {inv.date}</p>
                         </div>
                         <div className="flex lg:flex-col w-full md:w-fit justify-between gap-2">
@@ -1020,7 +1020,7 @@ export default function GenerationsHub() {
               <div className="bg-neutral-50 border p-3 sm:p-4 rounded-xl text-[10px] sm:text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 print:bg-transparent">
                 <div>
                   <span className="font-bold text-slate-400 uppercase tracking-wider block">Billed Client Party:</span>
-                  <div className="font-black text-slate-900 mt-1 text-sm sm:text-base break-words">{activePrintInvoice.clientName}</div>
+                  <div className="font-black text-slate-900 mt-1 text-sm sm:text-base ">{activePrintInvoice.clientName}</div>
                   <div className="text-slate-500 font-medium mt-0.5 text-[10px]">Corporate Supply Chain Account</div>
                 </div>
                 <div className="sm:text-right">
@@ -1048,7 +1048,7 @@ export default function GenerationsHub() {
                         <td className="py-2 sm:py-3 px-2 sm:px-3 font-mono font-bold text-slate-500">{b.lrNumber}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 font-bold text-slate-900">{b.vehicleNumber}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3">
-                          <div className="break-words">{b.routeSequence}</div>
+                          <div>{b.routeSequence}</div>
                           <div className="text-[9px] sm:text-[10px] text-slate-400 font-normal">To: {b.destination}</div>
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono">₹ {Math.round(b.freight).toLocaleString("en-IN")}</td>

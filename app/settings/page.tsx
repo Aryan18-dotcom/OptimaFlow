@@ -377,8 +377,8 @@ export default function SettingsPanel() {
                   ) : null}
 
                   <div className="flex-1">
-                    <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 break-words">{companyName || "Your Company Name"}</h3>
-                    <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 max-w-xs leading-normal break-words">{billUI.companyAddress || "No Corporate Address Set."}</p>
+                    <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900">{companyName || "Your Company Name"}</h3>
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 max-w-xs leading-norma">{billUI.companyAddress || "No Corporate Address Set."}</p>
                   </div>
                 </div>
                 <div className="text-left sm:text-right w-full sm:w-auto">
@@ -391,19 +391,19 @@ export default function SettingsPanel() {
               <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3 sm:gap-4 text-[9px] sm:text-[10px] bg-neutral-50 p-3 rounded-lg border border-neutral-100">
                 <div className="w-full">
                   <span className="text-slate-400 font-bold uppercase block tracking-wide">Billed Consignee:</span>
-                  <div className="font-bold text-slate-800 mt-0.5 text-[10px] sm:text-xs break-words">Adani Enterprises Distribution</div>
-                  <div className="text-slate-500 break-words">Mundra Port Terminal, Kutch, Gujarat</div>
+                  <div className="font-bold text-slate-800 mt-0.5 text-[10px] sm:text-xs">Adani Enterprises Distribution</div>
+                  <div className="text-slate-500">Mundra Port Terminal, Kutch, Gujarat</div>
                 </div>
                 <div className="sm:text-right w-full">
                   <span className="text-slate-400 font-bold uppercase block tracking-wide">Shipment References:</span>
                   <div className="font-medium text-slate-800 mt-0.5 text-[10px] sm:text-xs"><strong>Vehicle Num:</strong> GJ-01-ZZ-1024</div>
-                  <div className="text-slate-500 text-[9px] sm:text-[10px] break-words"><strong>Route manifest:</strong> Ahmedabad ⇄ Surat</div>
+                  <div className="text-slate-500 text-[9px] sm:text-[10px]"><strong>Route manifest:</strong> Ahmedabad ⇄ Surat</div>
                 </div>
               </div>
 
               {/* Invoice Table - Horizontal scroll on mobile */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[400px]">
+                <table className="w-full text-left border-collapse min-w-100">
                   <thead>
                     <tr style={{ backgroundColor: `${billUI.themeColor}10` }} className="border-b border-neutral-200 text-[9px] sm:text-[10px] font-bold uppercase text-slate-500 transition-colors duration-200">
                       <th className="py-2 px-2 sm:px-3">Cargo Description</th>
@@ -414,7 +414,7 @@ export default function SettingsPanel() {
                   </thead>
                   <tbody className="divide-y divide-neutral-100 font-medium">
                     <tr>
-                      <td className="py-2 sm:py-3 px-2 sm:px-3 text-[10px] sm:text-xs break-words">Bulk Freight Transportation (Trip log ID: #904)</td>
+                      <td className="py-2 sm:py-3 px-2 sm:px-3 text-[10px] sm:text-xs">Bulk Freight Transportation (Trip log ID: #904)</td>
                       <td className="py-2 sm:py-3 px-2 sm:px-3 text-center font-mono text-[10px] sm:text-xs">1</td>
                       <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono text-[10px] sm:text-xs">₹24,000.00</td>
                       <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono text-[10px] sm:text-xs">₹24,000.00</td>
@@ -445,7 +445,7 @@ export default function SettingsPanel() {
               <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 text-[8px] sm:text-[9px] pt-4 border-t border-neutral-100">
                 <div className="space-y-1">
                   <span className="text-slate-400 font-bold uppercase block tracking-wide">Contract Declarations:</span>
-                  <p className="text-slate-400 whitespace-pre-line leading-relaxed break-words">{billUI.termsText || "No explicit terms specified."}</p>
+                  <p className="text-slate-400 whitespace-pre-line leading-relaxed">{billUI.termsText || "No explicit terms specified."}</p>
                 </div>
                 
                 {billUI.showSignature && (

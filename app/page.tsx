@@ -227,7 +227,7 @@ const TableRow = ({ dateStr, asset, driver, legs }: { dateStr: string; asset: st
 
               {/* The Arrow Connector */}
               {i < legs.length - 1 && (
-                <span className="text-neutral-400 font-bold mx-[2px] lg:mx-1">→</span>
+                <span className="text-neutral-400 font-bold mx-0.5 lg:mx-1">→</span>
               )}
             </React.Fragment>
           ))}
