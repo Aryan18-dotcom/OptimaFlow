@@ -169,7 +169,7 @@ export default function ConfigManage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-xl border border-neutral-200 shadow-md p-4 sm:p-6 min-h-[400px]">
+        <div className="bg-white rounded-xl border border-neutral-200 shadow-md p-4 sm:p-6 min-h-100">
           <AnimatePresence mode="wait">
 
             {/* TAB: DRIVERS - Fully Responsive */}

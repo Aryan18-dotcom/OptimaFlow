@@ -797,7 +797,7 @@ export default function GenerationsHub() {
                     </div>
 
                     {/* Mobile Card View for Bills */}
-                    <div className="block lg:hidden space-y-3 max-h-[500px] overflow-y-auto">
+                    <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
                       {bills.filter(b => selectedParty ? b.partyName === selectedParty : true).map(bill => (
                         <div key={bill.id} className="border border-neutral-200 rounded-lg p-3 space-y-2 bg-white">
                           <div className="flex items-start justify-between">
@@ -1031,7 +1031,7 @@ export default function GenerationsHub() {
 
               {/* Responsive table with horizontal scroll on mobile */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[600px]">
+                <table className="w-full text-left border-collapse min-w-150">
                   <thead>
                     <tr style={{ backgroundColor: `${systemSettings.billUI.themeColor}10` }} className="border-b-2 border-neutral-200 text-slate-500 font-bold text-[9px] sm:text-[10px] uppercase">
                       <th className="py-2 px-2 sm:px-3">LR Slip</th>
