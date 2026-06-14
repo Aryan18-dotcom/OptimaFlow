@@ -38,6 +38,29 @@ function parseDisplayDateToTime(displayDate: string, targetYear: number): number
   return new Date(targetYear, monthIndex !== -1 ? monthIndex : 5, day, 12, 0, 0).getTime();
 }
 
+function parseRouteSequenceToLegs(sequenceStr: string) {
+  if (!sequenceStr) return [{ location: "No Data", type: "None" }];
+
+  return sequenceStr.split("-").map(legText => {
+    let type: "LD" | "MT" | "Parking" | "None" = "None";
+    let customTag = undefined;
+    let location = legText;
+
+    const tagMatch = location.match(/\[([^\]]+)\]/);
+    if (tagMatch) { customTag = tagMatch[1]; location = location.replace(/\[[^\]]+\]/, ""); }
+
+    const typeMatch = location.match(/\(([^)]+)\)/);
+    if (typeMatch) {
+      const parsedType = typeMatch[1].trim().toUpperCase();
+      if (parsedType === "LD" || parsedType === "MT" || parsedType === "PARKING") {
+        type = parsedType === "PARKING" ? "Parking" : (parsedType as any);
+      }
+      location = location.replace(/\([^)]+\)/, "");
+    }
+    return { location: location.trim(), type, customTag };
+  });
+}
+
 // ==========================================
 //  GET: AGGREGATE METRICS & SYSTEM SETTINGS
 // ==========================================
@@ -47,7 +70,7 @@ export async function GET() {
 
     // 1. Load basic registries
     const resourcesDb = loadJsonData(RESOURCES_FILE_PATH, { drivers: [], trucks: [], assignments: [] });
-    
+
     const defaultSettings = {
       sheetLink: "https://docs.google.com/spreadsheets/d/1x9B_Notary_Transit_v6Zk/edit",
       companyName: "Chheda Roadways Logistics",
@@ -82,7 +105,7 @@ export async function GET() {
       if (!fileContent) return;
 
       const dailyLogMatrix = JSON.parse(fileContent);
-      
+
       // Determine shard file year context dynamically
       const yearMatch = file.match(/trips-\d+-(\d+)\.json/);
       const fileYear = yearMatch ? parseInt(yearMatch[1], 10) : todayLocal.getFullYear();
@@ -97,11 +120,11 @@ export async function GET() {
           compiledTripsFeed.push({
             id: trip.id,
             dateString: group.currentDay,
-            // Convert to a raw millisecond value for consistent analytical sorting across months
             timestamp: parseDisplayDateToTime(group.currentDay, fileYear),
             assetPlate: trip.vehicleNumber,
             operatorPilot: trip.driverName,
             routeSequence: trip.routeSequence,
+            legs: parseRouteSequenceToLegs(trip.routeSequence),
             status: trip.routeSequence.toLowerCase().includes("parking") ? "Delayed" : "In Transit"
           });
         });
@@ -129,7 +152,7 @@ export async function GET() {
         totalTripsToday: totalTripsTodayCount
       },
       // Keep feed capped to top 15 rows for clear page loads
-      activeLogsTable: compiledTripsFeed.slice(0, 15),
+      activeLogsTable: compiledTripsFeed,
       settings: systemSettings
     });
 

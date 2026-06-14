@@ -51,3 +51,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.pdf-capture-fix {
+  /* Force simple RGB colors for elements that use advanced color spaces */
+  background-color: #f5f5f5 !important; 
+  color: #000000 !important;
+}

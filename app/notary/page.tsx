@@ -280,46 +280,49 @@ export default function DailyNotary() {
   });
 
   return (
-    <main className="w-full min-h-screen bg-neutral-100 text-slate-900 antialiased p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <main className="w-full min-h-screen bg-neutral-100 text-slate-900 antialiased p-3 sm:p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
 
         {/* --- HEADER BLOCK --- */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-neutral-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-4 sm:p-6 rounded-xl border border-neutral-200 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Daily Route Notary Logs</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Track multi-stop transit assignments, parking entries, and payload statuses.</p>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Daily Route Notary Logs</h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Track multi-stop transit assignments, parking entries, and payload statuses.</p>
           </div>
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={openCreateModal}
-            className="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm cursor-pointer transition-colors self-start sm:self-auto"
+            className="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm cursor-pointer transition-colors self-start sm:self-auto"
           >
             + Create New Route Log
           </motion.button>
         </div>
 
         {/* --- FILTER CONTROL MODULE --- */}
-        <div className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-xl border border-neutral-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setViewMode("all"); setFilterDate(""); }}
-              className={`text-xs font-bold px-4 py-2 rounded-lg border transition-all cursor-pointer ${viewMode === "all" && !filterDate ? "bg-slate-900 text-white border-slate-900" : "bg-neutral-50 border-neutral-200 text-slate-600"}`}
+              className={`text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border transition-all cursor-pointer ${viewMode === "all" && !filterDate ? "bg-slate-900 text-white border-slate-900" : "bg-neutral-50 border-neutral-200 text-slate-600"}`}
             >
               All Records
             </button>
             <button
               onClick={() => setViewMode("today")}
-              className={`text-xs font-bold px-4 py-2 rounded-lg border transition-all cursor-pointer ${viewMode === "today" ? "bg-slate-900 text-white border-slate-900" : "bg-neutral-50 border-neutral-200 text-slate-600"}`}
+              className={`text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border transition-all cursor-pointer ${viewMode === "today" ? "bg-slate-900 text-white border-slate-900" : "bg-neutral-50 border-neutral-200 text-slate-600"}`}
             >
               Today's Trips
             </button>
-            <div className="h-6 w-[1px] bg-neutral-200 mx-1 hidden sm:block" />
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => { setFilterDate(e.target.value); setViewMode("all"); }}
-              className="text-xs font-medium border border-neutral-200 bg-neutral-50 p-2 rounded-lg focus:outline-none focus:border-sky-500 text-slate-600"
-            />
+            <div className="h-6 w-px bg-neutral-200 mx-1 hidden sm:block" />
+            <div className="flex items-center gap-2 lg:gap-0">
+              <label className="text-[10px] lg:hidden uppercase font-bold text-slate-400">Filter Date:</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => { setFilterDate(e.target.value); setViewMode("all"); }}
+                className="text-xs font-medium border border-neutral-200 bg-neutral-50 p-1.5 sm:p-2 rounded-lg focus:outline-none focus:border-sky-500 text-slate-600"
+              />
+            </div>
           </div>
 
           <div className="w-full md:w-72">
@@ -328,14 +331,15 @@ export default function DailyNotary() {
               placeholder="Search Vehicle, Driver, or Location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 text-xs p-2.5 rounded-lg focus:outline-none focus:border-sky-500 text-slate-700"
+              className="w-full bg-neutral-50 border border-neutral-200 text-xs p-2 sm:p-2.5 rounded-lg focus:outline-none focus:border-sky-500 text-slate-700"
             />
           </div>
         </div>
 
-        {/* --- TRIP LIST DATA BOARD --- */}
+        {/* --- TRIP LIST DATA BOARD - Mobile Card Layout & Desktop Table --- */}
         <div className="bg-white rounded-xl border border-neutral-200 shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View - Hidden on mobile */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-neutral-200 text-slate-400 text-xs font-bold uppercase bg-neutral-50/80 tracking-wide">
@@ -358,7 +362,7 @@ export default function DailyNotary() {
                     </tr>
                   ) : filteredTrips.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-12 text-center text-slate-400 font-medium">
+                      <td colSpan={4} className="px-2 py-12 text-center text-slate-400 font-medium">
                         No notary trip records found matching your specified filters.
                       </td>
                     </tr>
@@ -386,19 +390,19 @@ export default function DailyNotary() {
                             {trip.legs.map((leg, i) => (
                               <React.Fragment key={i}>
                                 <div className="flex items-center space-x-1.5 bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1.5 shadow-sm">
-                                  <span className="font-semibold text-slate-800">{leg.location}</span>
+                                  <span className="font-semibold text-slate-800 text-xs sm:text-sm">{leg.location}</span>
                                   {leg.type !== "None" && leg.type !== "Parking" && (
-                                    <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${leg.type === "LD" ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-amber-100 text-amber-800 border border-amber-200"}`}>
+                                    <span className={`text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded ${leg.type === "LD" ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-amber-100 text-amber-800 border border-amber-200"}`}>
                                       {leg.type}
                                     </span>
                                   )}
                                   {leg.type === "Parking" && (
-                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
+                                    <span className="text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
                                       PRK
                                     </span>
                                   )}
                                   {leg.customTag && (
-                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100">
+                                    <span className="text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100">
                                       {leg.customTag}
                                     </span>
                                   )}
@@ -432,50 +436,140 @@ export default function DailyNotary() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View - Visible only on mobile/tablet */}
+          <div className="block md:hidden divide-y divide-neutral-100">
+            <AnimatePresence mode="popLayout">
+              {isLoading ? (
+                <div className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <div className="w-6 h-6 border-2 border-sky-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Syncing Ledger Pipeline...</p>
+                  </div>
+                </div>
+              ) : filteredTrips.length === 0 ? (
+                <div className="px-2 py-12 text-center text-slate-400 font-medium text-sm">
+                  No notary trip records found matching your specified filters.
+                </div>
+              ) : (
+                filteredTrips.map((trip) => (
+                  <motion.div
+                    key={trip.id}
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="p-4 space-y-3 hover:bg-neutral-50/60 transition-colors"
+                  >
+                    {/* Header: Date and Actions */}
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-slate-600 whitespace-nowrap text-md">
+                        {new Date(trip.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => openEditModal(trip)}
+                          className="text-xs font-semibold text-sky-600 hover:bg-sky-50 px-2.5 py-1.5 rounded-md transition-all"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTrip(trip.id)}
+                          className="text-xs font-semibold text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 rounded-md transition-all"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Vehicle & Driver Info */}
+                    <div>
+                      <div className="font-bold text-slate-900 text-base">Veh - {trip.vehicleNumber}</div>
+                      <div className="text-xs font-medium text-slate-500 mt-0.5">
+                        Driver: <span className="text-slate-700 font-semibold">{trip.driverName}</span>
+                      </div>
+                    </div>
+
+                    {/* Route Legs */}
+                    <div>
+                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-2 tracking-wider">Route Sequence</div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {trip.legs.map((leg, i) => (
+                          <React.Fragment key={i}>
+                            <div className="flex items-center space-x-1.5 bg-neutral-50 border border-neutral-200 rounded-lg px-2 py-1.5 shadow-sm">
+                              <span className="font-semibold text-slate-800 text-xs">{leg.location}</span>
+                              {leg.type !== "None" && leg.type !== "Parking" && (
+                                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${leg.type === "LD" ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-amber-100 text-amber-800 border border-amber-200"}`}>
+                                  {leg.type}
+                                </span>
+                              )}
+                              {leg.type === "Parking" && (
+                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-200">
+                                  PRK
+                                </span>
+                              )}
+                              {leg.customTag && (
+                                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100">
+                                  {leg.customTag}
+                                </span>
+                              )}
+                            </div>
+                            {i < trip.legs.length - 1 && (
+                              <span className="text-neutral-300 font-bold text-sm select-none">→</span>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
       </div>
 
-      {/* --- MODAL DIALOG --- */}
+      {/* --- MODAL DIALOG - Responsive Modal --- */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white w-full max-w-xl rounded-xl border border-neutral-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              className="bg-white w-full max-w-xl rounded-xl border border-neutral-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] mx-3 sm:mx-4"
             >
-              <div className="p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
-                <h3 className="font-bold text-lg text-slate-900">
+              <div className="p-4 sm:p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+                <h3 className="font-bold text-base sm:text-lg text-slate-900">
                   {editingTripId ? "Modify Notary Entry" : "Log New Logistics Route"}
                 </h3>
-                <button onClick={() => !isSubmitting && setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer">✕</button>
+                <button onClick={() => !isSubmitting && setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 font-bold text-base sm:text-sm cursor-pointer">✕</button>
               </div>
 
-              <form onSubmit={handleSaveTrip} className="p-6 space-y-4 overflow-y-auto flex-1">
-                <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleSaveTrip} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold uppercase text-slate-400">Date Logged</label>
+                    <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Date Logged</label>
                     <input
                       type="date"
                       required
                       value={tripDate}
                       disabled={isSubmitting}
                       onChange={e => setTripDate(e.target.value)}
-                      className="w-full mt-1 bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg focus:outline-none focus:border-sky-500 disabled:opacity-60"
+                      className="w-full mt-1 bg-neutral-50 border border-neutral-200 text-sm p-2 sm:p-2.5 rounded-lg focus:outline-none focus:border-sky-500 disabled:opacity-60"
                     />
                   </div>
 
                   {/* UNIFIED ACTIVE TRUCK AND DRIVER PAIR DROPDOWN */}
                   <div>
-                    <label className="text-xs font-bold uppercase text-slate-400">Fleet Asset Selection</label>
+                    <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Fleet Asset Selection</label>
                     <select
                       required
                       disabled={isSubmitting}
                       value={selectedPairIndex}
                       onChange={e => setSelectedPairIndex(e.target.value)}
-                      className="w-full mt-1 bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg focus:outline-none focus:border-sky-500 disabled:opacity-60 text-slate-800"
+                      className="w-full mt-1 bg-neutral-50 border border-neutral-200 text-sm p-2 sm:p-2.5 rounded-lg focus:outline-none focus:border-sky-500 disabled:opacity-60 text-slate-800"
                     >
                       <option value="">-- Choose Active Pairing --</option>
                       {activeFleetPairs.map((pair, idx) => (
@@ -490,20 +584,20 @@ export default function DailyNotary() {
                 {/* --- ROUTE CHAIN CONSTRUCTOR --- */}
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold uppercase text-slate-400">Route Execution Leg Chain</label>
+                    <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Route Execution Leg Chain</label>
                     <button
                       type="button"
                       disabled={isSubmitting}
                       onClick={handleAddLegField}
-                      className="text-xs font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 px-2.5 py-1 rounded-md transition-all cursor-pointer disabled:opacity-50"
+                      className="text-xs font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100 px-2 py-1 sm:px-2.5 sm:py-1 rounded-md transition-all cursor-pointer disabled:opacity-50"
                     >
                       + Add Target Location
                     </button>
                   </div>
 
-                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  <div className="space-y-2 max-h-55 overflow-y-auto pr-1">
                     {legs.map((leg, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-neutral-50/50 p-2 rounded-lg border border-neutral-200/60">
+                      <div key={index} className="flex flex-wrap items-center gap-2 bg-neutral-50/50 p-2 rounded-lg border border-neutral-200/60">
                         <span className="text-xs font-bold font-mono text-neutral-400 px-1 w-5">{index + 1}</span>
 
                         <input
@@ -520,7 +614,7 @@ export default function DailyNotary() {
                           value={leg.type}
                           disabled={isSubmitting}
                           onChange={e => handleLegChange(index, { type: e.target.value as any })}
-                          className="bg-white border border-neutral-200 text-xs p-2 rounded-lg focus:outline-none focus:border-sky-500 w-28 text-slate-600 disabled:opacity-60"
+                          className="flex-1 bg-white border border-neutral-200 text-xs p-2 rounded-lg focus:outline-none focus:border-sky-500 w-24 sm:w-28 text-slate-600 disabled:opacity-60 ml-7 lg:ml-0"
                         >
                           <option value="None">Plain Drop</option>
                           <option value="LD">Loaded (LD)</option>
@@ -531,10 +625,10 @@ export default function DailyNotary() {
                         <input
                           type="text"
                           disabled={isSubmitting}
-                          placeholder="Tag (e.g., Dev)"
+                          placeholder="Tag"
                           value={leg.customTag || ""}
                           onChange={e => handleLegChange(index, { customTag: e.target.value || undefined })}
-                          className="w-20 bg-white border border-neutral-200 text-xs p-2 rounded-lg focus:outline-none focus:border-sky-500 disabled:opacity-60"
+                          className="w-25 lg:flex-1 bg-white border border-neutral-200 text-xs p-2 rounded-lg focus:outline-none focus:border-sky-500 disabled:opacity-60"
                         />
 
                         <button
@@ -550,7 +644,7 @@ export default function DailyNotary() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-neutral-100 flex justify-end gap-2">
+                <div className="pt-4 border-t border-neutral-100 flex flex-col-reverse sm:flex-row justify-end gap-2">
                   <button
                     type="button"
                     disabled={isSubmitting}
@@ -562,7 +656,7 @@ export default function DailyNotary() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2.5 rounded-lg shadow-sm cursor-pointer flex items-center justify-center min-w-[100px] disabled:bg-slate-700"
+                    className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-4 py-2.5 rounded-lg shadow-sm cursor-pointer flex items-center justify-center min-w-25 disabled:bg-slate-700"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

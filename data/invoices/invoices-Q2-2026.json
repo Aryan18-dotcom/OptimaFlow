@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "id": "INV-4234",
+    "invoiceNumber": "MS-TS-2026-760",
+    "date": "2026-06-14",
+    "clientName": "Abc",
+    "billsBundled": [
+      "BILL-LR-3482"
+    ],
+    "subtotal": 9000,
+    "gstAmount": 1620,
+    "grandTotal": 10620
+  },
+  {
+    "id": "INV-1028",
+    "invoiceNumber": "MS-TS-2026-172",
+    "date": "2026-06-14",
+    "clientName": "Rehat Transport",
+    "billsBundled": [
+      "BILL-LR-7193"
+    ],
+    "subtotal": 12500,
+    "gstAmount": 2250,
+    "grandTotal": 14750
+  }
+]
