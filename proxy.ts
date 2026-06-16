@@ -1,27 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(req: NextRequest) {
-  // 1. Bypass IP check entirely if running in development mode
-  if (process.env.NODE_ENV === "development") {
+  const { pathname } = req.nextUrl;
+  
+  // 1. Allow public routes
+  if (pathname === '/login' || pathname.startsWith('/api/auth')) {
     return NextResponse.next();
   }
 
-  // 2. Get the allowed IPs from environment variables
-  const allowedIps = process.env.ALLOWED_IPS?.split(",").map((ip) => ip.trim()) ?? [];
+  // 2. Check for credentials
+  const token = req.cookies.get("accessToken");
+  const deviceId = req.cookies.get("deviceId");
 
-  // 3. Safely get the client IP
-  const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0].trim() : null;
-
-  // 4. Validate IP availability
-  if (!ip) {
-    return new NextResponse("Access Denied: Unable to determine IP", { status: 403 });
+  // 3. If missing, redirect to login
+  if (!token || !deviceId) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // 5. Check if the IP is in the allowed list
-  if (!allowedIps.includes(ip)) {
-    console.warn(`Blocked access attempt from IP: ${ip}`);
-    return new NextResponse("Access Denied", { status: 403 });
+  // 4. If user is at /login but has a session, send to dashboard
+  if (pathname === '/login') {
+    return NextResponse.redirect(new URL('/', req.url));
   }
 
   return NextResponse.next();

@@ -1,5 +1,16 @@
 import mongoose from 'mongoose';
 const { Schema, models, model } = mongoose 
+
+const userSchema = new Schema({
+  name: { type: String, required: true },
+  phone: { type: Number, required: true, unique: true },
+  password: { type: String, required: true }, // Store hashed passwords!
+  otp: { code: String, expiresAt: Date },
+  refreshToken: String,
+  deviceId: { type: String, default: null }, // Stores the device fingerprint
+  isVerified: { type: Boolean, default: false }
+});
+
 // 1. TRIP MODEL
 const tripSchema = new Schema({
     id: { type: String, required: true, unique: true },
@@ -75,3 +86,4 @@ export const Bill = models.Bill || model('Bill', billSchema);
 export const Invoice = models.Invoice || model('Invoice', invoiceSchema);
 export const Resource = models.Resource || model('Resource', resourceSchema);
 export const Setting = models.Setting || model('Setting', settingSchema);
+export const User = models.User || model('User', userSchema);
