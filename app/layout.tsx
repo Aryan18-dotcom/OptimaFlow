@@ -4,6 +4,7 @@ import "./globals.css";
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from "./components/Navbar";
 import { ToastContainer } from "react-toastify";
+import LayoutWrapper from "./components/LayoutWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -76,8 +77,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           pauseOnHover
           theme="light"
         />
-        <Navbar />
-        {children}
+        <LayoutWrapper>{children}</LayoutWrapper>
       </body>
     </html>
   );

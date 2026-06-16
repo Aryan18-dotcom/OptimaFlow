@@ -13,13 +13,26 @@ export async function POST(request: Request) {
 
         switch (action) {
             case 'register': {
-                const hashedPassword = await bcrypt.hash(payload.password, 10);
-                const newUser = await User.create({
+                // 1. Get the role from the request URL
+                const { searchParams } = new URL(request.url);
+                const roleParam = searchParams.get('role');
+
+                // 2. Define the user data, defaulting to 'user' if not 'admin'
+                const userData = {
                     ...payload,
-                    password: hashedPassword,
-                    deviceId
-                });
-                const accessToken = jwt.sign({ userId: newUser._id }, JWT_SECRET, { expiresIn: '15m' });
+                    password: await bcrypt.hash(payload.password, 10),
+                    deviceId,
+                    role: roleParam === 'admin' ? 'admin' : 'user' // Set role based on query param
+                };
+
+                const newUser = await User.create(userData);
+
+                const accessToken = jwt.sign(
+                    { userId: newUser._id, role: newUser.role },
+                    JWT_SECRET,
+                    { expiresIn: '15m' }
+                );
+
                 const response = NextResponse.json({ success: true, userId: newUser._id });
 
                 response.cookies.set("accessToken", accessToken, { httpOnly: true, secure: true, sameSite: 'lax' });
@@ -116,6 +129,18 @@ export async function POST(request: Request) {
                 });
 
                 return response;
+            }
+
+            case 'add-user': {
+                const hashedPassword = await bcrypt.hash(payload.password, 10);
+                await User.create({
+                    name: payload.name,
+                    phone: payload.phone,
+                    password: hashedPassword,
+                    role: payload.role || 'user'
+                });
+
+                return NextResponse.json({ success: true, message: "User created successfully" });
             }
 
             default:

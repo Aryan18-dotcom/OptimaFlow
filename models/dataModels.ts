@@ -8,7 +8,8 @@ const userSchema = new Schema({
   otp: { code: String, expiresAt: Date },
   refreshToken: String,
   deviceId: { type: String, default: null }, // Stores the device fingerprint
-  isVerified: { type: Boolean, default: false }
+  isVerified: { type: Boolean, default: false },
+  role: { type: String, require: true, default: "user" }
 });
 
 // 1. TRIP MODEL
