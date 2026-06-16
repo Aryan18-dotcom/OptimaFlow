@@ -7,8 +7,8 @@ import { toast } from "react-toastify";
 type DriverStatus = "home" | "hospital" | "active" | "leaved" | "inActive";
 type TruckStatus = "active" | "inActive" | "under maintenance" | "accidental";
 
-interface Driver { id: string; name: string; phone: string; status: DriverStatus; }
-interface Truck { id: string; plateNumber: string; model: string; ownerName: string; status: TruckStatus; }
+interface Driver { _id: string; name: string; phone: string; status: DriverStatus; }
+interface Truck { _id: string; name: string; model: string; ownerName: string; status: TruckStatus; }
 interface Assignment { truckId: string; driverId: string; assignedAt: string; }
 
 export default function ConfigManage() {
@@ -20,7 +20,7 @@ export default function ConfigManage() {
 
   // Clean form input states without license dependencies
   const [driverForm, setDriverForm] = useState({ name: "", phone: "", status: "home" as DriverStatus });
-  const [truckForm, setTruckForm] = useState({ plateNumber: "", model: "", ownerName: "", status: "active" as TruckStatus, directDriverId: "" });
+  const [truckForm, setTruckForm] = useState({ name: "", model: "", ownerName: "", status: "active" as TruckStatus, directDriverId: "" });
   const [assignment, setAssignment] = useState({ truckId: "", driverId: "" });
 
   useEffect(() => {
@@ -29,12 +29,30 @@ export default function ConfigManage() {
         const response = await fetch("/api/resources");
         const json = await response.json();
         if (json.success) {
-          setDrivers(json.drivers || []);
-          setTrucks(json.trucks || []);
-          setAssignments(json.assignments || []);
+          // Map the new API structure to your internal state structure
+          setDrivers(json.drivers.map((d: any) => ({
+            _id: d.details.id, // Using the ID from 'details'
+            name: d.name,
+            phone: d.details.phone,
+            status: d.details.status
+          })));
+
+          setTrucks(json.trucks.map((t: any) => ({
+            _id: t.details.id, // Using the ID from 'details'
+            name: t.name,
+            model: t.details.model,
+            ownerName: t.details.owner,
+            status: t.details.status
+          })));
+
+          setAssignments(json.assignments.map((a: any) => ({
+            truckId: a.details.truckId,
+            driverId: a.details.driverId,
+            assignedAt: a.details.assignedAt
+          })));
         }
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load resources:", err);
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +83,7 @@ export default function ConfigManage() {
     const driverUniqueId = `DRV-${Date.now().toString().slice(-4)}-${phoneSuffix}`;
 
     const newDriver: Driver = {
-      id: driverUniqueId,
+      _id: driverUniqueId,
       name: driverForm.name.trim(),
       phone: driverForm.phone.trim(),
       status: driverForm.status
@@ -79,18 +97,18 @@ export default function ConfigManage() {
 
   const handleUpdateDriverStatus = async (id: string, status: DriverStatus) => {
     if (await dispatchAction("updateDriverStatus", { id, status })) {
-      setDrivers(drivers.map(d => d.id === id ? { ...d, status } : d));
+      setDrivers(drivers.map(d => d._id === id ? { ...d, status } : d));
     }
   };
 
   const handleAddTruck = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!truckForm.plateNumber || !truckForm.ownerName) return;
+    if (!truckForm.name || !truckForm.ownerName) return;
     const truckId = `TRK-${Date.now().toString().slice(-4)}`;
 
     const newTruck: Truck = {
-      id: truckId,
-      plateNumber: truckForm.plateNumber.toUpperCase().trim(),
+      _id: truckId,
+      name: truckForm.name.toUpperCase().trim(),
       model: truckForm.model.trim() || "Standard Carrier",
       ownerName: truckForm.ownerName.trim(),
       status: truckForm.status
@@ -101,13 +119,13 @@ export default function ConfigManage() {
       if (truckForm.directDriverId) {
         setAssignments([...assignments.filter(a => a.driverId !== truckForm.directDriverId), { truckId, driverId: truckForm.directDriverId, assignedAt: new Date().toISOString() }]);
       }
-      setTruckForm({ plateNumber: "", model: "", ownerName: "", status: "active", directDriverId: "" });
+      setTruckForm({ name: "", model: "", ownerName: "", status: "active", directDriverId: "" });
     }
   };
 
   const handleUpdateTruckStatus = async (id: string, status: TruckStatus) => {
     if (await dispatchAction("updateTruckStatus", { id, status })) {
-      setTrucks(trucks.map(t => t.id === id ? { ...t, status } : t));
+      setTrucks(trucks.map(t => t._id === id ? { ...t, status } : t));
     }
   };
 
@@ -128,14 +146,14 @@ export default function ConfigManage() {
 
   const handleDeleteDriver = async (id: string) => {
     if (await dispatchAction("deleteDriver", { id })) {
-      setDrivers(drivers.filter(d => d.id !== id));
+      setDrivers(drivers.filter(d => d._id !== id));
       setAssignments(assignments.filter(a => a.driverId !== id));
     }
   };
 
   const handleDeleteTruck = async (id: string) => {
     if (await dispatchAction("deleteTruck", { id })) {
-      setTrucks(trucks.filter(t => t.id !== id));
+      setTrucks(trucks.filter(t => t._id !== id));
       setAssignments(assignments.filter(a => a.truckId !== id));
     }
   };
@@ -156,9 +174,9 @@ export default function ConfigManage() {
         {/* Navigation Tabs - Responsive */}
         <div className="flex flex-wrap bg-neutral-200/60 p-1 rounded-xl gap-1 border border-neutral-200">
           {(["drivers", "trucks", "assign"] as const).map((tab) => (
-            <button 
-              key={tab} 
-              onClick={() => setActiveTab(tab)} 
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
               className="flex-1 sm:flex-initial text-xs sm:text-sm font-semibold px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg capitalize transition-all relative cursor-pointer whitespace-nowrap"
             >
               <span className="relative z-10 text-slate-700">
@@ -175,30 +193,30 @@ export default function ConfigManage() {
             {/* TAB: DRIVERS - Fully Responsive */}
             {activeTab === "drivers" && (
               <motion.div key="drivers-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-                
+
                 {/* Form Section */}
                 <div className="lg:w-1/3 space-y-4">
                   <h3 className="font-bold text-base sm:text-lg text-slate-800">Register New Operator</h3>
                   <form onSubmit={handleAddDriver} className="space-y-3">
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Driver Name" 
-                      value={driverForm.name} 
-                      onChange={e => setDriverForm({ ...driverForm, name: e.target.value })} 
+                    <input
+                      type="text"
+                      required
+                      placeholder="Driver Name"
+                      value={driverForm.name}
+                      onChange={e => setDriverForm({ ...driverForm, name: e.target.value })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none focus:border-sky-500"
                     />
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Contact Phone Number" 
-                      value={driverForm.phone} 
-                      onChange={e => setDriverForm({ ...driverForm, phone: e.target.value })} 
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contact Phone Number"
+                      value={driverForm.phone}
+                      onChange={e => setDriverForm({ ...driverForm, phone: e.target.value })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none focus:border-sky-500"
                     />
-                    <select 
-                      value={driverForm.status} 
-                      onChange={e => setDriverForm({ ...driverForm, status: e.target.value as DriverStatus })} 
+                    <select
+                      value={driverForm.status}
+                      onChange={e => setDriverForm({ ...driverForm, status: e.target.value as DriverStatus })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none text-slate-600 focus:border-sky-500"
                     >
                       <option value="home">🏠 Home (Off-Duty)</option>
@@ -216,20 +234,20 @@ export default function ConfigManage() {
                 {/* Table Section - Responsive */}
                 <div className="lg:flex-1">
                   <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-4">Active Operations Roster</h3>
-                  
+
                   {/* Mobile Card View */}
                   <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
                     {drivers.map(driver => (
-                      <div key={driver.id} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-white">
+                      <div key={driver._id} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-white">
                         <div>
                           <div className="font-bold text-slate-950 text-sm">{driver.name}</div>
-                          <div className="text-[10px] font-mono font-bold text-slate-400 tracking-wider mt-0.5 uppercase">{driver.id}</div>
+                          <div className="text-[10px] font-mono font-bold text-slate-400 tracking-wider mt-0.5 uppercase">{driver._id}</div>
                         </div>
                         <div className="text-xs font-semibold text-slate-600">📞 {driver.phone}</div>
                         <div className="flex items-center justify-between gap-2">
-                          <select 
-                            value={driver.status} 
-                            onChange={e => handleUpdateDriverStatus(driver.id, e.target.value as DriverStatus)} 
+                          <select
+                            value={driver.status}
+                            onChange={e => handleUpdateDriverStatus(driver._id, e.target.value as DriverStatus)}
                             className="flex-1 text-xs font-semibold p-1.5 rounded-md bg-neutral-100 border border-neutral-200 outline-none text-slate-700"
                           >
                             <option value="home">🏠 Home</option>
@@ -238,8 +256,8 @@ export default function ConfigManage() {
                             <option value="inActive">💤 In-Active</option>
                             <option value="leaved">❌ Leaved</option>
                           </select>
-                          <button 
-                            onClick={() => handleDeleteDriver(driver.id)} 
+                          <button
+                            onClick={() => handleDeleteDriver(driver._id)}
                             className="text-xs text-rose-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-rose-50 cursor-pointer"
                           >
                             Remove
@@ -261,20 +279,20 @@ export default function ConfigManage() {
                           <th className="py-2.5 px-4">Contact Phone</th>
                           <th className="py-2.5 px-4">Duty Status Ledger</th>
                           <th className="py-2.5 px-4 text-right">Action</th>
-                         </tr>
+                        </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 text-sm">
                         {drivers.map(driver => (
-                          <tr key={driver.id} className="hover:bg-neutral-50/50 transition-colors">
+                          <tr key={driver._id} className="hover:bg-neutral-50/50 transition-colors">
                             <td className="py-3 px-4 font-medium text-slate-800">
                               <div className="font-bold text-slate-950">{driver.name}</div>
-                              <div className="text-[10px] font-mono font-bold text-slate-400 tracking-wider mt-0.5 uppercase">{driver.id}</div>
+                              <div className="text-[10px] font-mono font-bold text-slate-400 tracking-wider mt-0.5 uppercase">{driver._id}</div>
                             </td>
                             <td className="py-3 px-4 font-mono text-xs font-semibold text-slate-600">📞 {driver.phone}</td>
                             <td className="py-3 px-4">
-                              <select 
-                                value={driver.status} 
-                                onChange={e => handleUpdateDriverStatus(driver.id, e.target.value as DriverStatus)} 
+                              <select
+                                value={driver.status}
+                                onChange={e => handleUpdateDriverStatus(driver._id, e.target.value as DriverStatus)}
                                 className="text-xs font-semibold p-1.5 rounded-md bg-neutral-100 border border-neutral-200 outline-none text-slate-700"
                               >
                                 <option value="home">🏠 Home</option>
@@ -285,7 +303,7 @@ export default function ConfigManage() {
                               </select>
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <button onClick={() => handleDeleteDriver(driver.id)} className="text-xs text-rose-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-rose-50 cursor-pointer">
+                              <button onClick={() => handleDeleteDriver(driver._id)} className="text-xs text-rose-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-rose-50 cursor-pointer">
                                 Remove
                               </button>
                             </td>
@@ -301,38 +319,38 @@ export default function ConfigManage() {
             {/* TAB: TRUCKS - Fully Responsive */}
             {activeTab === "trucks" && (
               <motion.div key="trucks-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-                
+
                 {/* Form Section */}
                 <div className="lg:w-1/3 space-y-4">
                   <h3 className="font-bold text-base sm:text-lg text-slate-800">Register Fleet Asset</h3>
                   <form onSubmit={handleAddTruck} className="space-y-3">
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Truck Plate Number" 
-                      value={truckForm.plateNumber} 
-                      onChange={e => setTruckForm({ ...truckForm, plateNumber: e.target.value })} 
+                    <input
+                      type="text"
+                      required
+                      placeholder="Truck Plate Number"
+                      value={truckForm.name}
+                      onChange={e => setTruckForm({ ...truckForm, name: e.target.value })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none font-mono uppercase focus:border-sky-500"
                     />
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="Purchased Under Name / Owner" 
-                      value={truckForm.ownerName} 
-                      onChange={e => setTruckForm({ ...truckForm, ownerName: e.target.value })} 
+                    <input
+                      type="text"
+                      required
+                      placeholder="Purchased Under Name / Owner"
+                      value={truckForm.ownerName}
+                      onChange={e => setTruckForm({ ...truckForm, ownerName: e.target.value })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none focus:border-sky-500"
                     />
-                    <input 
-                      type="text" 
-                      placeholder="Chassis / Model Series" 
-                      value={truckForm.model} 
-                      onChange={e => setTruckForm({ ...truckForm, model: e.target.value })} 
+                    <input
+                      type="text"
+                      placeholder="Chassis / Model Series"
+                      value={truckForm.model}
+                      onChange={e => setTruckForm({ ...truckForm, model: e.target.value })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none focus:border-sky-500"
                     />
 
-                    <select 
-                      value={truckForm.status} 
-                      onChange={e => setTruckForm({ ...truckForm, status: e.target.value as TruckStatus })} 
+                    <select
+                      value={truckForm.status}
+                      onChange={e => setTruckForm({ ...truckForm, status: e.target.value as TruckStatus })}
                       className="w-full bg-neutral-50 border border-neutral-200 text-sm p-2.5 rounded-lg outline-none text-slate-600 focus:border-sky-500"
                     >
                       <option value="active">🟢 Active (On Road Ready)</option>
@@ -343,14 +361,14 @@ export default function ConfigManage() {
 
                     <div className="border-t border-dashed border-neutral-200 pt-2">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Direct Pilot Assignment (Optional)</label>
-                      <select 
-                        value={truckForm.directDriverId} 
-                        onChange={e => setTruckForm({ ...truckForm, directDriverId: e.target.value })} 
+                      <select
+                        value={truckForm.directDriverId}
+                        onChange={e => setTruckForm({ ...truckForm, directDriverId: e.target.value })}
                         className="w-full mt-1 bg-sky-50/50 border border-sky-100 text-xs p-2.5 rounded-lg outline-none text-slate-700 focus:border-sky-500"
                       >
                         <option value="">-- No Operator (Leave Empty) --</option>
-                        {drivers.filter(d => !busyDriverIds.includes(d.id) && d.status !== "leaved").map(d => (
-                          <option key={d.id} value={d.id}>{d.name} ({d.status})</option>
+                        {drivers.filter(d => !busyDriverIds.includes(d._id) && d.status !== "leaved").map(d => (
+                          <option key={d._id} value={d._id}>{d.name} ({d.status})</option>
                         ))}
                       </select>
                     </div>
@@ -364,20 +382,20 @@ export default function ConfigManage() {
                 {/* Table Section - Responsive */}
                 <div className="lg:flex-1">
                   <h3 className="font-bold text-base sm:text-lg text-slate-800 mb-4">Freight Asset Ledger</h3>
-                  
+
                   {/* Mobile Card View */}
                   <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
                     {trucks.map(truck => (
-                      <div key={truck.id} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-white">
+                      <div key={truck._id} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-white">
                         <div>
-                          <div className="font-mono font-bold text-base text-slate-900">{truck.plateNumber}</div>
-                          <div className="text-xs text-slate-400 font-medium mt-0.5">{truck.model} ({truck.id})</div>
+                          <div className="font-mono font-bold text-base text-slate-900">{truck.name}</div>
+                          <div className="text-xs text-slate-400 font-medium mt-0.5">{truck.model} ({truck._id})</div>
                         </div>
                         <div className="text-sm font-medium text-slate-700">Owner: {truck.ownerName}</div>
                         <div className="flex items-center justify-between gap-2">
-                          <select 
-                            value={truck.status} 
-                            onChange={e => handleUpdateTruckStatus(truck.id, e.target.value as TruckStatus)} 
+                          <select
+                            value={truck.status}
+                            onChange={e => handleUpdateTruckStatus(truck._id, e.target.value as TruckStatus)}
                             className="flex-1 text-xs font-bold p-1.5 rounded-md bg-neutral-100 border border-neutral-200 outline-none"
                           >
                             <option value="active">🟢 Active</option>
@@ -385,8 +403,8 @@ export default function ConfigManage() {
                             <option value="under maintenance">🔧 Workshop</option>
                             <option value="accidental">⚠️ Accidental</option>
                           </select>
-                          <button 
-                            onClick={() => handleDeleteTruck(truck.id)} 
+                          <button
+                            onClick={() => handleDeleteTruck(truck._id)}
                             className="text-xs text-rose-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-rose-50 cursor-pointer"
                           >
                             Remove
@@ -408,20 +426,20 @@ export default function ConfigManage() {
                           <th className="py-2.5 px-4">Registered Owner</th>
                           <th className="py-2.5 px-4">Asset Status</th>
                           <th className="py-2.5 px-4 text-right">Action</th>
-                         </tr>
+                        </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-100 text-sm">
                         {trucks.map(truck => (
-                          <tr key={truck.id} className="hover:bg-neutral-50/50 transition-colors">
+                          <tr key={truck._id} className="hover:bg-neutral-50/50 transition-colors">
                             <td className="py-3 px-4">
-                              <div className="font-mono font-bold text-base text-slate-900">{truck.plateNumber}</div>
-                              <div className="text-xs text-slate-400 font-medium">{truck.model} ({truck.id})</div>
+                              <div className="font-mono font-bold text-base text-slate-900">{truck.name}</div>
+                              <div className="text-xs text-slate-400 font-medium">{truck.model} ({truck._id})</div>
                             </td>
                             <td className="py-3 px-4 font-medium text-slate-700">{truck.ownerName}</td>
                             <td className="py-3 px-4">
-                              <select 
-                                value={truck.status} 
-                                onChange={e => handleUpdateTruckStatus(truck.id, e.target.value as TruckStatus)} 
+                              <select
+                                value={truck.status}
+                                onChange={e => handleUpdateTruckStatus(truck._id, e.target.value as TruckStatus)}
                                 className="text-xs font-bold p-1.5 rounded-md bg-neutral-100 border border-neutral-200 outline-none"
                               >
                                 <option value="active">🟢 Active</option>
@@ -431,7 +449,7 @@ export default function ConfigManage() {
                               </select>
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <button onClick={() => handleDeleteTruck(truck.id)} className="text-xs text-rose-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-rose-50 cursor-pointer">
+                              <button onClick={() => handleDeleteTruck(truck._id)} className="text-xs text-rose-600 font-medium px-2.5 py-1.5 rounded-md hover:bg-rose-50 cursor-pointer">
                                 Remove
                               </button>
                             </td>
@@ -462,10 +480,10 @@ export default function ConfigManage() {
                       >
                         <option value="">-- Choose Plate --</option>
                         {trucks.map(t => {
-                          const isAssigned = busyTruckIds.includes(t.id);
+                          const isAssigned = busyTruckIds.includes(t._id);
                           return (
-                            <option key={t.id} value={t.id} disabled={isAssigned}>
-                              {t.plateNumber} [Owner: {t.ownerName}] {isAssigned ? "[Busy]" : "[Free]"}
+                            <option key={t._id} value={t._id} disabled={isAssigned}>
+                              {t.name} [Owner: {t.ownerName}] {isAssigned ? "[Busy]" : "[Free]"}
                             </option>
                           );
                         })}
@@ -481,9 +499,9 @@ export default function ConfigManage() {
                       >
                         <option value="">-- Unassigned / Standing Yard --</option>
                         {drivers.filter(d => d.status !== "leaved").map(d => {
-                          const isBusy = busyDriverIds.includes(d.id);
+                          const isBusy = busyDriverIds.includes(d._id);
                           return (
-                            <option key={d.id} value={d.id} disabled={isBusy}>
+                            <option key={d._id} value={d._id} disabled={isBusy}>
                               {d.name} ({d.status}) {isBusy ? "[Busy]" : "[Free]"}
                             </option>
                           );
@@ -505,20 +523,20 @@ export default function ConfigManage() {
                       <div className="col-span-2 text-center text-slate-400 text-xs py-8">No trucks available</div>
                     ) : (
                       trucks.map(truck => {
-                        const pair = assignments.find(a => a.truckId === truck.id);
-                        const activeDriver = pair ? drivers.find(d => d.id === pair.driverId) : null;
+                        const pair = assignments.find(a => a.truckId === truck._id);
+                        const activeDriver = pair ? drivers.find(d => d._id === pair.driverId) : null;
                         return (
-                          <div key={truck.id} className="border border-neutral-200 p-3 sm:p-4 rounded-xl bg-neutral-50/50 flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md transition-shadow">
+                          <div key={truck._id} className="border border-neutral-200 p-3 sm:p-4 rounded-xl bg-neutral-50/50 flex flex-col justify-between space-y-3 shadow-xs hover:shadow-md transition-shadow">
                             <div>
                               <div className="flex items-center justify-between flex-wrap gap-2">
                                 <span className="font-mono text-[9px] sm:text-[10px] font-bold text-slate-400 bg-neutral-200/60 px-1.5 py-0.5 rounded">
-                                  {truck.id}
+                                  {truck._id}
                                 </span>
                                 <span className={`text-[9px] sm:text-[10px] font-bold uppercase px-2 py-0.5 rounded ${truck.status === "active" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : truck.status === "under maintenance" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-neutral-200 text-neutral-700"}`}>
                                   {truck.status}
                                 </span>
                               </div>
-                              <h4 className="font-mono text-base sm:text-lg font-bold text-slate-900 mt-1">{truck.plateNumber}</h4>
+                              <h4 className="font-mono text-base sm:text-lg font-bold text-slate-900 mt-1">{truck.name}</h4>
                               <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-0.5">
                                 Owner: {truck.ownerName} | Model: {truck.model}
                               </p>

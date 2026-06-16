@@ -19,125 +19,93 @@ interface Trip {
   legs: RouteLeg[];
 }
 
-// Resource mapping types to match the configurations database structure
-interface ResourceDriver { id: string; name: string; phone: string; status: string; }
+interface ResourceDriver { id: string; driverName: string; phone: string; status: string; }
 interface ResourceTruck { id: string; plateNumber: string; model: string; ownerName: string; status: string; }
-interface ResourceAssignment { truckId: string; driverId: string; assignedAt: string; }
+interface ResourceAssignment { vehicleNumber: string; driverName: string; }
 
-// Utility function to reconstruct dynamic spreadsheet text strings back into standard leg objects
+// --- Universal Date Converter ---
+const dateConverter = (date: string) => {
+  if (!date) return "";
+  const monthMap = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // If it's already YYYY-MM-DD, return as is
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+
+  // If "15-Jun-2026"
+  const [d, m, y] = date.split('-');
+  return `${y}-${String(monthMap.indexOf(m) + 1).padStart(2, '0')}-${d.padStart(2, '0')}`;
+};
+
 function parseRouteSequenceToLegs(sequenceStr: string): RouteLeg[] {
   if (!sequenceStr) return [{ location: "", type: "None" }];
-
-  const legsRaw = sequenceStr.split("-");
-  return legsRaw.map(legText => {
+  return sequenceStr.split("-").map(legText => {
     let type: "LD" | "MT" | "Parking" | "None" = "None";
-    let customTag: string | undefined = undefined;
+    let customTag: string | undefined;
     let location = legText;
 
-    // Extract custom tag: [Dev]
     const tagMatch = location.match(/\[([^\]]+)\]/);
-    if (tagMatch) {
-      customTag = tagMatch[1];
-      location = location.replace(/\[[^\]]+\]/, "");
-    }
+    if (tagMatch) { customTag = tagMatch[1]; location = location.replace(/\[[^\]]+\]/, ""); }
 
-    // Extract status tags: (LD), (MT), (Parking)
     const typeMatch = location.match(/\(([^)]+)\)/);
     if (typeMatch) {
       const parsedType = typeMatch[1];
-      if (parsedType === "LD" || parsedType === "MT" || parsedType === "Parking") {
-        type = parsedType;
-      }
+      if (["LD", "MT", "Parking"].includes(parsedType)) type = parsedType as any;
       location = location.replace(/\([^)]+\)/, "");
     }
-
-    return {
-      location: location.trim(),
-      type,
-      customTag
-    };
+    return { location: location.trim(), type, customTag };
   });
 }
 
 export default function DailyNotary() {
-  // --- Live Data States ---
   const [trips, setTrips] = useState<Trip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // --- Configuration Pairings States ---
-  const [activeFleetPairs, setActiveFleetPairs] = useState<{ vehicleNumber: string; driverName: string }[]>([]);
+  const [activeFleetPairs, setActiveFleetPairs] = useState<ResourceAssignment[]>([]);
   const [selectedPairIndex, setSelectedPairIndex] = useState<string>("");
-
-  // --- Filtering & Search States ---
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [viewMode, setViewMode] = useState<"all" | "today">("today");
 
-  const todayLocal = new Date();
-  const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`;
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  // --- Form States ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [tripDate, setTripDate] = useState(todayStr);
   const [legs, setLegs] = useState<RouteLeg[]>([{ location: "", type: "LD" }]);
 
-  // --- Sync effect lifecycle on mount ---
   useEffect(() => {
-    async function loadDataPipeline() {
+    async function loadData() {
       try {
-        // 1. Fetch live logged trips ledger
-        const tripsResponse = await fetch("/api/sheets");
-        const tripsJson = await tripsResponse.json();
+        const [tripsRes, resRes] = await Promise.all([fetch("/api/sheets"), fetch("/api/resources")]);
+        const tripsJson = await tripsRes.json();
+        const resJson = await resRes.json();
 
-        if (tripsJson.success && tripsJson.data) {
-          const formattedTrips: Trip[] = tripsJson.data.map((item: any) => ({
+        if (tripsJson.success) {
+          setTrips(tripsJson.data.map((item: any) => ({
             id: item.id,
-            date: item.date,
+            date: dateConverter(item.date),
             vehicleNumber: item.vehicleNumber,
             driverName: item.driverName,
             legs: parseRouteSequenceToLegs(item.routeSequence)
-          }));
-
-          formattedTrips.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setTrips(formattedTrips);
+          })));
         }
-
-        // 2. Fetch configurations layout pairs
-        const resourcesResponse = await fetch("/api/resources");
-        const resJson = await resourcesResponse.json();
 
         if (resJson.success) {
-          const fetchedDrivers: ResourceDriver[] = resJson.drivers || [];
-          const fetchedTrucks: ResourceTruck[] = resJson.trucks || [];
-          const fetchedAssignments: ResourceAssignment[] = resJson.assignments || [];
+          const fetchedDrivers = resJson.drivers.map((d: any) => ({ ...d.details, name: d.name }));
+          const fetchedTrucks = resJson.trucks.map((t: any) => ({ ...t.details, plateNumber: t.name }));
+          const fetchedAssignments = resJson.assignments.map((a: any) => a.details);
 
-          // Map relationships and filter out trucks that don't have an assigned pilot
-          const compiledPairs = fetchedTrucks
-            .map(truck => {
-              const assignment = fetchedAssignments.find(a => a.truckId === truck.id);
-              const matchingDriver = assignment ? fetchedDrivers.find(d => d.id === assignment.driverId) : null;
-
-              return {
-                vehicleNumber: truck.plateNumber,
-                driverName: matchingDriver ? matchingDriver.name : "None"
-              };
+          setActiveFleetPairs(fetchedTrucks
+            .map((truck: ResourceTruck) => {
+              const assign = fetchedAssignments.find((a: any) => a.truckId === truck.id);
+              const driver = assign ? fetchedDrivers.find((d: any) => d.id === assign.driverId) : null;
+              return { vehicleNumber: truck.plateNumber, driverName: driver?.name || "None" };
             })
-            // CRITICAL STATUS FILTER: Only show active paired units with a configured driver
-            .filter(pair => pair.driverName !== "None");
-
-          setActiveFleetPairs(compiledPairs);
+            .filter((p: ResourceDriver) => p.driverName !== "None"));
         }
-
-      } catch (err) {
-        console.error("Failed loading local application logs database:", err);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch (e) { console.error(e); } finally { setIsLoading(false); }
     }
-    loadDataPipeline();
+    loadData();
   }, []);
 
   // --- Helper Functions for Multi-Leg Inputs ---
@@ -169,81 +137,29 @@ export default function DailyNotary() {
     setEditingTripId(trip.id);
     setTripDate(trip.date);
     setLegs(trip.legs);
-
-    // Auto-select dropdown match if vehicle assignment configuration state exists
-    const matchingPairIndex = activeFleetPairs.findIndex(
-      p => p.vehicleNumber.toLowerCase() === trip.vehicleNumber.toLowerCase()
-    );
-    setSelectedPairIndex(matchingPairIndex !== -1 ? matchingPairIndex.toString() : "");
+    const idx = activeFleetPairs.findIndex(p => p.vehicleNumber === trip.vehicleNumber);
+    setSelectedPairIndex(idx !== -1 ? idx.toString() : "");
     setIsModalOpen(true);
   };
 
-  // --- Handle API Save Pipeline ---
   const handleSaveTrip = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedPairIndex === "" || legs.some(l => !l.location.trim())) {
-      toast.warning("Please choose a fleet asset selection pair before submitting.");
-      return;
-    }
-
     setIsSubmitting(true);
-
     const activePair = activeFleetPairs[parseInt(selectedPairIndex, 10)];
-
-    const routeSequence = legs
-      .map(l => {
-        let tag = l.type !== "None" ? `(${l.type})` : "";
-        if (l.customTag) tag += `[${l.customTag}]`;
-        return `${l.location}${tag}`;
-      })
-      .join("-");
 
     const tripPayload = {
       id: editingTripId || `TRIP-${activePair.vehicleNumber}-${Date.now()}`,
       date: tripDate,
       vehicleNumber: activePair.vehicleNumber,
       driverName: activePair.driverName,
-      routeSequence: routeSequence
+      routeSequence: legs.map(l => `${l.location}${l.type !== "None" ? `(${l.type})` : ""}${l.customTag ? `[${l.customTag}]` : ""}`).join("-")
     };
 
     try {
-      const response = await fetch("/api/sheets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "notary",
-          data: tripPayload
-        })
-      });
-
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.message);
-
-      if (editingTripId) {
-        setTrips(trips.map(t => t.id === editingTripId ? {
-          ...t,
-          date: tripDate,
-          vehicleNumber: activePair.vehicleNumber,
-          driverName: activePair.driverName,
-          legs
-        } : t));
-      } else {
-        const newLocalTrip: Trip = {
-          id: tripPayload.id,
-          date: tripDate,
-          vehicleNumber: activePair.vehicleNumber,
-          driverName: activePair.driverName,
-          legs
-        };
-        setTrips([newLocalTrip, ...trips]);
-      }
-
-      setIsModalOpen(false);
-    } catch (error: any) {
-      toast.error(`⚠️ Sheet Sync Failed: ${error.message || "Could not sync entry state."}`);
-    } finally {
-      setIsSubmitting(false);
-    }
+      await fetch("/api/sheets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: tripPayload }) });
+      toast.success("Saved!");
+      window.location.reload();
+    } catch { toast.error("Failed"); } finally { setIsSubmitting(false); }
   };
 
   const handleDeleteTrip = async (id: string) => {
@@ -265,19 +181,11 @@ export default function DailyNotary() {
     }
   };
 
-
-  // --- Query Filtering Logic ---
-  const filteredTrips = trips.filter(trip => {
-    const matchesSearch =
-      trip.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      trip.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      trip.legs.some(l => l.location.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesDate = filterDate ? trip.date === filterDate : true;
-    const matchesView = viewMode === "today" ? trip.date === todayStr : true;
-
-    return matchesSearch && matchesDate && matchesView;
-  });
+  const filteredTrips = trips.filter(t =>
+    (t.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase()) || t.driverName.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (filterDate ? t.date === filterDate : true) &&
+    (viewMode === "today" ? t.date === todayStr : true)
+  );
 
   return (
     <main className="w-full min-h-screen bg-neutral-100 text-slate-900 antialiased p-3 sm:p-4 md:p-8">
@@ -308,7 +216,7 @@ export default function DailyNotary() {
               All Records
             </button>
             <button
-              onClick={() => setViewMode("today")}
+              onClick={() => { setViewMode("today"); setFilterDate(""); }}
               className={`text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border transition-all cursor-pointer ${viewMode === "today" ? "bg-slate-900 text-white border-slate-900" : "bg-neutral-50 border-neutral-200 text-slate-600"}`}
             >
               Today's Trips

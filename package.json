@@ -8,13 +8,16 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "types": "module",
   "dependencies": {
     "@types/exceljs": "^0.5.3",
+    "cloudinary": "^2.10.0",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.40.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "mongoose": "^9.7.0",
     "next": "^16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -29,8 +32,5 @@
     "eslint-config-next": "16.2.7",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "overrides": {
-    "postcss": "^8.5.15"
   }
 }

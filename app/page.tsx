@@ -34,21 +34,7 @@ export default function Home() {
 
         if (json.success) {
           setMetrics(json.metrics);
-          const allActiveLogsTable = json.activeLogsTable || [];
-
-          const todayLocal = new Date();
-          const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-          const todayString = `${todayLocal.getDate()}-${months[todayLocal.getMonth()]}`;
-
-          const yesterdayLocal = new Date();
-          yesterdayLocal.setDate(todayLocal.getDate() - 1);
-          const yesterdayString = `${yesterdayLocal.getDate()}-${months[yesterdayLocal.getMonth()]}`;
-
-          const filteredLogs = allActiveLogsTable.filter((log: any) =>
-            log.dateString === todayString || log.dateString === yesterdayString
-          );
-
-          setLogsTable(filteredLogs);
+          setLogsTable(json.activeLogsTable || []);
 
           if (json.settings?.companyName) {
             setOrganizationTitle(json.settings.companyName);
@@ -121,17 +107,33 @@ export default function Home() {
                 </thead>
                 <motion.tbody variants={containerVariants} initial="hidden" animate="show" className="divide-y divide-neutral-100 text-slate-700">
                   {logsTable.length === 0 ? (
-                    <tr><td colSpan={4} className="py-4 lg:py-8 text-center text-slate-400 font-medium">No logistical transactions recorded.</td></tr>
+                    <tr>
+                      <td colSpan={4} className="py-4 lg:py-8 text-center text-slate-400 font-medium">
+                        No logistical transactions recorded.
+                      </td>
+                    </tr>
                   ) : (
-                    logsTable.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        dateStr={row.dateString}
-                        asset={row.assetPlate}
-                        driver={row.operatorPilot}
-                        legs={row.legs || []}
-                      />
-                    ))
+                    logsTable.map((row) => {
+                      // Helper to convert "2026-06-15" to "15-Jun"
+                      const formatDate = (dateStr: string) => {
+                        if (!dateStr) return "";
+                        const date = new Date(dateStr + "T00:00:00");
+                        return date.toLocaleDateString('en-GB', {
+                          day: 'numeric',
+                          month: 'short'
+                        });
+                      };
+
+                      return (
+                        <TableRow
+                          key={row.id}
+                          dateStr={formatDate(row.dateString)}
+                          asset={row.assetPlate}
+                          driver={row.operatorPilot}
+                          legs={row.legs || []}
+                        />
+                      );
+                    })
                   )}
                 </motion.tbody>
               </table>

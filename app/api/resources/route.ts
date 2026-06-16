@@ -1,145 +1,119 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { connectToDatabase } from "@/lib/connectDB";
+import { Resource } from "@/models/dataModels";
 
-const RES_FILE_PATH = path.join(process.cwd(), "data", "resources.json");
-
-type DriverStatus = "home" | "hospital" | "active" | "leaved" | "inActive";
-type TruckStatus = "active" | "inActive" | "under maintenance" | "accidental";
-
-interface Driver {
-  id: string;
-  name: string;
-  phone: string;
-  status: DriverStatus;
-}
-
-interface Truck {
-  id: string;
-  plateNumber: string;
-  model: string;
-  ownerName: string;
-  status: TruckStatus;
-}
-
-interface Assignment {
-  truckId: string;
-  driverId: string;
-  assignedAt: string;
-}
-
-interface Database {
-  drivers: Driver[];
-  trucks: Truck[];
-  assignments: Assignment[];
-}
-
-function ensureResourceDB() {
-  const dirPath = path.dirname(RES_FILE_PATH);
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-  if (!fs.existsSync(RES_FILE_PATH)) {
-    const baseState: Database = { drivers: [], trucks: [], assignments: [] };
-    fs.writeFileSync(RES_FILE_PATH, JSON.stringify(baseState, null, 2), "utf-8");
-  }
-}
-
-function readDB(): Database {
-  ensureResourceDB();
-  return JSON.parse(fs.readFileSync(RES_FILE_PATH, "utf-8"));
-}
-
-function writeDB(data: Database) {
-  fs.writeFileSync(RES_FILE_PATH, JSON.stringify(data, null, 2), "utf-8");
-}
-
+// ==========================================
+//  GET: Fetch all resources
+// ==========================================
 export async function GET() {
   try {
-    const db = readDB();
-    return NextResponse.json({ success: true, ...db });
+    await connectToDatabase();
+
+    // Fetch all resources at once
+    const allResources = await Resource.find({});
+
+    // Group them for your existing frontend structure
+    const drivers = allResources.filter(r => r.category === 'driver');
+    const trucks = allResources.filter(r => r.category === 'truck');
+    const assignments = allResources.filter(r => r.category === 'assignment');
+
+    return NextResponse.json({ success: true, drivers, trucks, assignments });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error?.message || "Read Error" }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
+// ==========================================
+//  POST: Resource CRUD Actions
+// ==========================================
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { action, payload } = body;
-    const db = readDB();
+    await connectToDatabase();
+    const { action, payload } = await request.json();
 
     switch (action) {
       case "addDriver":
-        // Clean phone numbers to compare them accurately
-        const incomingPhone = payload.phone.trim().replace(/\s+/g, "");
-        
-        // Strict Check: Ensure a driver with this exact phone number isn't already registered
-        const isDuplicatePhone = db.drivers.some(
-          d => d.phone.trim().replace(/\s+/g, "") === incomingPhone
-        );
-
-        if (isDuplicatePhone) {
-          return NextResponse.json(
-            { success: false, message: "An operator with this contact phone number already exists in the system." },
-            { status: 400 }
-          );
+        const phoneClean = payload.phone.trim().replace(/\s+/g, "");
+        const existingDriver = await Resource.findOne({ category: 'driver', 'details.phone': phoneClean });
+        if (existingDriver) {
+          return NextResponse.json({ success: false, message: "Driver already exists." }, { status: 400 });
         }
-        
-        db.drivers.push(payload);
+        await Resource.create({ name: payload.name, category: 'driver', details: payload });
         break;
 
       case "updateDriverStatus":
-        db.drivers = db.drivers.map(d => d.id === payload.id ? { ...d, status: payload.status } : d);
+        // 1. Find if this driver is currently assigned
+        const assignment = await Resource.findOne({
+          category: 'assignment',
+          'details.driverId': payload.id
+        });
+
+        if (assignment) {
+          // 2. Remove the assignment
+          await Resource.deleteMany({
+            category: 'assignment',
+            'details.driverId': payload.id
+          });
+
+          // 3. Update the associated Truck's status to "inActive"
+          // We use the truckId found in the assignment document
+          await Resource.findOneAndUpdate(
+            { category: 'truck', 'details.id': assignment.details.truckId },
+            { $set: { "details.status": "inActive" } }
+          );
+        }
+
+        // 4. Finally, update the driver's own status
+        await Resource.findOneAndUpdate(
+          { category: 'driver', 'details.id': payload.id },
+          { $set: { "details.status": payload.status } }
+        );
         break;
 
       case "addTruck":
-        if (db.trucks.some(t => t.plateNumber.toLowerCase() === payload.plateNumber.toLowerCase())) {
-          return NextResponse.json({ success: false, message: "Plate number already exists." }, { status: 400 });
-        }
-        db.trucks.push(payload);
-        
+        await Resource.create({ name: payload.plateNumber, category: 'truck', details: payload });
         if (payload.directDriverId) {
-          db.assignments = db.assignments.filter(a => a.driverId !== payload.directDriverId);
-          db.assignments.push({
-            truckId: payload.id,
-            driverId: payload.directDriverId,
-            assignedAt: new Date().toISOString()
+          // Logic for immediate assignment
+          await Resource.deleteMany({ category: 'assignment', 'details.driverId': payload.directDriverId });
+          await Resource.create({
+            name: "assignment",
+            category: 'assignment',
+            details: { truckId: payload.id, driverId: payload.directDriverId, assignedAt: new Date() }
           });
         }
         break;
 
       case "updateTruckStatus":
-        db.trucks = db.trucks.map(t => t.id === payload.id ? { ...t, status: payload.status } : t);
+        await Resource.findOneAndUpdate({ id: payload.id }, { "details.status": payload.status });
         break;
 
       case "assign":
-        const { truckId, driverId } = payload;
-        db.assignments = db.assignments.filter(a => a.truckId !== truckId);
-        
-        if (driverId) {
-          if (db.assignments.some(a => a.driverId === driverId)) {
-            return NextResponse.json({ success: false, message: "Operator is already linked to another truck resource configuration." }, { status: 400 });
-          }
-          db.assignments.push({ truckId, driverId, assignedAt: new Date().toISOString() });
+        await Resource.deleteMany({ category: 'assignment', 'details.truckId': payload.truckId });
+        if (payload.driverId) {
+          await Resource.create({
+            name: `Assignment-${payload.truckId}`,
+            category: 'assignment',
+            details: payload
+          });
         }
         break;
 
       case "deleteDriver":
-        db.drivers = db.drivers.filter(d => d.id !== payload.id);
-        db.assignments = db.assignments.filter(a => a.driverId !== payload.id);
+        await Resource.findOneAndDelete({ id: payload.id });
+        await Resource.deleteMany({ category: 'assignment', 'details.driverId': payload.id });
         break;
 
       case "deleteTruck":
-        db.trucks = db.trucks.filter(t => t.id !== payload.id);
-        db.assignments = db.assignments.filter(a => a.truckId !== payload.id);
+        await Resource.findOneAndDelete({ id: payload.id });
+        await Resource.deleteMany({ category: 'assignment', 'details.truckId': payload.truckId });
         break;
 
       default:
-        return NextResponse.json({ success: false, message: "Action fallback error" }, { status: 400 });
+        return NextResponse.json({ success: false, message: "Invalid action" }, { status: 400 });
     }
 
-    writeDB(db);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error?.message || "Write Error" }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

@@ -6,45 +6,45 @@ import { toast } from "react-toastify";
 
 interface UnbilledTrip {
   id: string;
-  date: string;
-  vehicleNumber: string;
-  routeSequence: string;
+  trip_date_display: string;
+  vehicle_number: string;
+  route_sequence: string;
   destination: string;
-  driverName: string;
+  driver_name: string;
 }
 
 interface Bill {
   id: string;
   tripId: string;
   date: string;
-  vehicleNumber: string;
-  routeSequence: string;
+  vehicle_number: string;
+  route_sequence: string;
   destination: string;
-  lrNumber: string;
-  partyName: string;  
+  lr_number: string;
+  party_name: string;
   weight: string | number;
   rate: string | number;
   freight: number;
   diten: number;
   advance: number;
-  totalExtraCharge: number;
-  baseFair: number;
-  totalAmount: number;
+  total_extra_charge: number;
+  base_fair: number;
+  total_amount: number;
   status: "Pending Invoice" | "Invoiced";
-  details?: string; 
-  tollCharges?: number; 
-  loadingCharges?: number;
+  details?: string;
+  toll_charges?: number;
+  loading_charges?: number;
 }
 
 interface Invoice {
-  id: string;
-  invoiceNumber: string;
+  _id: string;
+  invoice_number: string;
   date: string;
-  clientName: string;
-  billsBundled: string[];
+  client_name: string;
+  bills_bundled: string[];
   subtotal: number;
-  gstAmount: number;
-  grandTotal: number;
+  grand_total: number;
+  gst_amount: number;
 }
 
 interface SystemSettings {
@@ -101,6 +101,7 @@ export default function GenerationsHub() {
   // Wizard Step 1 states
   const [batchPartyName, setBatchPartyName] = useState("");
   const [searchTruck, setSearchTruck] = useState("");
+  const [searchTruckByDate, setSearchTruckByDate] = useState("");
   const [selectedTripIds, setSelectedTripIds] = useState<string[]>([]);
 
   // Wizard Step 2 states
@@ -158,7 +159,6 @@ export default function GenerationsHub() {
       showToast("Please check at least one unbilled trip log to initialize a manifest array.", "warning");
       return;
     }
-
     const compiledRows: GridRowInput[] = unbilledTrips
       .filter(t => selectedTripIds.includes(t.id))
       .map(t => ({
@@ -214,9 +214,9 @@ export default function GenerationsHub() {
         const payload = {
           id: activeBillId,
           tripId: row.trip.id,
-          date: row.trip.date,
-          vehicleNumber: row.trip.vehicleNumber,
-          routeSequence: row.trip.routeSequence,
+          date: row.trip.trip_date_display,
+          vehicle_number: row.trip.vehicle_number,
+          route_sequence: row.trip.route_sequence,
           destination: row.destination.trim() || row.trip.destination,
           lrNumber: row.lrNumber.trim(),
           partyName: batchPartyName.trim(),
@@ -227,7 +227,7 @@ export default function GenerationsHub() {
           advance: parseFloat(row.advance) || 0,
           totalExtraCharge: Math.round(parseFloat(row.freight) || 0 + parseFloat(row.diten) || 0 + parseFloat(row.diten) || 0),
           baseFair: Math.round((parseFloat(row.weight) || 0) * (parseFloat(row.rate) || 0)),
-          totalAmount: calculateRowBalance(row),
+          total_amount: calculateRowBalance(row),
 
           status: editingBillId
             ? (bills.find(b => b.id === editingBillId)?.status || "Pending Invoice")
@@ -267,26 +267,26 @@ export default function GenerationsHub() {
     if (selectedBillIds.length === 0 || !selectedParty) return;
     const matchedBills = bills.filter(b => selectedBillIds.includes(b.id));
 
-    const incompleteBills = matchedBills.filter(b => b.totalAmount === 0);
+    const incompleteBills = matchedBills.filter(b => b.total_amount === 0);
     if (incompleteBills.length > 0) {
-      const incompleteLrNumbers = incompleteBills.map(b => b.lrNumber).join(", ");
+      const incompleteLrNumbers = incompleteBills.map(b => b.lr_number).join(", ");
       showToast(`Invoice compilation blocked! Unpriced rows found on: [ ${incompleteLrNumbers} ]`, "warning");
       return;
     }
 
-    const subtotal = matchedBills.reduce((acc, b) => acc + b.totalAmount, 0);
-    const gstAmount = systemSettings.billUI.showGst ? Math.round(subtotal * 0.18) : 0;
-    const grandTotal = subtotal + gstAmount;
+    const subtotal = matchedBills.reduce((acc, b) => acc + b.total_amount, 0);
+    const gst_amount = systemSettings.billUI.showGst ? Math.round(subtotal * 0.18) : 0;
+    const grand_total = subtotal + gst_amount;
 
     const newInvoice: Invoice = {
-      id: `INV-${Date.now().toString().slice(-4)}`,
-      invoiceNumber: `${systemSettings.companyLogoText || "CHHEDA"}-TS-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      _id: `INV-${Date.now().toString().slice(-4)}`,
+      invoice_number: `${systemSettings.companyLogoText || "CHHEDA"}-TS-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split("T")[0],
-      clientName: selectedParty,
-      billsBundled: selectedBillIds,
+      client_name: selectedParty,
+      bills_bundled: selectedBillIds,
       subtotal,
-      gstAmount,
-      grandTotal
+      gst_amount,
+      grand_total
     };
 
     const response = await fetch("/api/invoices", {
@@ -308,27 +308,25 @@ export default function GenerationsHub() {
 
   const handleTriggerEdit = (bill: Bill) => {
     setEditingBillId(bill.id);
-    setBatchPartyName(bill.partyName);
+    setBatchPartyName(bill.party_name);
     setSelectedTripIds([bill.tripId]);
 
     const mockTrip: UnbilledTrip = {
       id: bill.tripId,
-      date: bill.date,
-      vehicleNumber: bill.vehicleNumber,
-      routeSequence: bill.routeSequence,
+      trip_date_display: bill.date,
+      vehicle_number: bill.vehicle_number,
+      route_sequence: bill.route_sequence,
       destination: bill.destination,
-      driverName: "" // Note: Ensure your data source provides this if needed
+      driver_name: "" // Note: Ensure your data source provides this if needed
     };
-
-    console.log(bill)
 
     setGridRows([{
       trip: mockTrip,
-      lrNumber: bill.lrNumber,
-      weight: String(bill.weight),      
-      rate: String(bill.rate),      
+      lrNumber: bill.lr_number,
+      weight: String(bill.weight),
+      rate: String(bill.rate),
       freight: String(bill.freight),
-      diten: String(bill.diten),    
+      diten: String(bill.diten),
       advance: String(bill.advance),
       destination: bill.destination
     }]);
@@ -365,8 +363,22 @@ export default function GenerationsHub() {
     }
   };
 
-  const unbilledParties = Array.from(new Set(bills.filter(b => b.status === "Pending Invoice").map(b => b.partyName)));
-  const filteredUnbilledQueue = unbilledTrips.filter(t => searchTruck ? t.vehicleNumber.toLowerCase().includes(searchTruck.toLowerCase()) : true);
+  const unbilledParties = Array.from(new Set(bills.filter(b => b.status === "Pending Invoice").map(b => b.party_name)));
+  const filteredUnbilledQueue = unbilledTrips.filter(t => {
+    // Normalize inputs
+    const truckQuery = searchTruck.toLowerCase();
+    const dateQuery = searchTruckByDate;
+
+    const matchesTruck = searchTruck
+      ? t.vehicle_number.toLowerCase().includes(truckQuery)
+      : true;
+
+    const matchesDate = searchTruckByDate
+      ? t.trip_date_display === dateQuery
+      : true;
+
+    return matchesTruck && matchesDate;
+  });
 
   function activeTab(tab: "trips" | "bills" | "invoices") { setActiveTab(tab); }
 
@@ -430,19 +442,30 @@ export default function GenerationsHub() {
 
                     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
                       <div className="lg:flex-2 space-y-3 sm:space-y-4">
-                        <input
-                          type="text"
-                          placeholder="🔍 Filter unbilled logs by vehicle plate number (e.g., 5399)..."
-                          value={searchTruck}
-                          onChange={e => setSearchTruck(e.target.value)}
-                          className="w-full bg-neutral-50 border border-neutral-200 text-xs sm:text-sm p-2.5 sm:p-3 rounded-lg outline-none focus:border-sky-500"
-                        />
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          {/* Truck Search Input */}
+                          <input
+                            type="text"
+                            placeholder="🔍 Plate number (e.g., 5399)..."
+                            value={searchTruck}
+                            onChange={(e) => setSearchTruck(e.target.value)}
+                            className="flex-1 bg-neutral-50 border border-neutral-200 text-xs sm:text-sm p-2.5 sm:p-3 rounded-lg outline-none focus:border-sky-500"
+                          />
+
+                          {/* Date Search Input */}
+                          <input
+                            type="date"
+                            value={searchTruckByDate}
+                            onChange={(e) => setSearchTruckByDate(e.target.value)}
+                            className="w-full sm:w-48 bg-neutral-50 border border-neutral-200 text-xs sm:text-sm p-2.5 sm:p-3 rounded-lg outline-none focus:border-sky-500 text-slate-600"
+                          />
+                        </div>
 
                         {/* Mobile Card View for Trips - Visible on mobile */}
                         <div className="block md:hidden space-y-3 max-h-100 overflow-y-auto">
                           {filteredUnbilledQueue.map(trip => (
                             <div
-                              key={`${trip.id}-${trip.date}`}
+                              key={`${trip.id}-${trip.trip_date_display}`}
                               onClick={() => handleToggleTripCheckbox(trip.id)}
                               className={`p-3 border rounded-lg transition-colors cursor-pointer ${selectedTripIds.includes(trip.id) ? "bg-sky-50/40 border-sky-200" : "bg-white border-neutral-200"}`}
                             >
@@ -454,11 +477,11 @@ export default function GenerationsHub() {
                                   onClick={(e) => e.stopPropagation()}
                                   className="h-4 w-4 text-sky-600 rounded cursor-pointer mt-0.5"
                                 />
-                                <span className="text-[10px] text-slate-400">{trip.date}</span>
+                                <span className="text-[10px] text-slate-400">{trip.trip_date_display}</span>
                               </div>
-                              <div className="font-bold text-slate-900 text-sm mb-1">{trip.vehicleNumber}</div>
-                              <div className="text-xs text-slate-600 ">{trip.routeSequence}</div>
-                              <div className="text-[10px] text-slate-400 mt-1">Driver: {trip.driverName}</div>
+                              <div className="font-bold text-slate-900 text-sm mb-1">{trip.vehicle_number}</div>
+                              <div className="text-xs text-slate-600 ">{trip.route_sequence}</div>
+                              <div className="text-[10px] text-slate-400 mt-1">Driver: {trip.driver_name}</div>
                             </div>
                           ))}
                           {filteredUnbilledQueue.length === 0 && (
@@ -480,7 +503,7 @@ export default function GenerationsHub() {
                             <tbody className="divide-y text-xs font-medium text-slate-700">
                               {filteredUnbilledQueue.map(trip => (
                                 <tr
-                                  key={`${trip.id}-${trip.date}`}
+                                  key={`${trip.id}-${trip.trip_date_display}`}
                                   onClick={() => handleToggleTripCheckbox(trip.id)}
                                   className={`hover:bg-neutral-50/80 transition-colors cursor-pointer ${selectedTripIds.includes(trip.id) ? "bg-sky-50/40" : ""}`}
                                 >
@@ -492,9 +515,9 @@ export default function GenerationsHub() {
                                       className="h-4 w-4 text-sky-600 rounded cursor-pointer"
                                     />
                                   </td>
-                                  <td className="py-3 px-3 sm:px-4 text-slate-400">{trip.date}</td>
-                                  <td className="py-3 px-3 sm:px-4 font-bold text-slate-900">{trip.vehicleNumber}</td>
-                                  <td className="py-3 px-3 sm:px-4 font-semibold">{trip.routeSequence} <span className="text-slate-400 font-normal">({trip.driverName})</span></td>
+                                  <td className="py-3 px-3 sm:px-4 text-slate-400">{trip.trip_date_display}</td>
+                                  <td className="py-3 px-3 sm:px-4 font-bold text-slate-900">{trip.vehicle_number}</td>
+                                  <td className="py-3 px-3 sm:px-4 font-semibold">{trip.route_sequence} <span className="text-slate-400 font-normal">({trip.driver_name})</span></td>
                                 </tr>
                               ))}
                             </tbody>
@@ -567,13 +590,13 @@ export default function GenerationsHub() {
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Date</label>
                                 <div className="text-slate-400 font-medium text-sm bg-neutral-50 p-2 rounded-lg border border-neutral-200">
-                                  {row.trip.date}
+                                  {row.trip.trip_date_display}
                                 </div>
                               </div>
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Truck Number</label>
                                 <div className="font-mono font-bold text-slate-900 text-sm bg-neutral-50 p-2 rounded-lg border border-neutral-200">
-                                  {row.trip.vehicleNumber}
+                                  {row.trip.vehicle_number}
                                 </div>
                               </div>
                             </div>
@@ -688,8 +711,8 @@ export default function GenerationsHub() {
                                       className="w-full bg-neutral-50 border p-1.5 lg:p-2 rounded-lg font-mono font-bold outline-none focus:bg-white focus:border-sky-500 text-slate-900 border-neutral-300 shadow-inner text-xs"
                                     />
                                   </td>
-                                  <td className="py-2 lg:py-2.5 px-2 lg:px-3 text-slate-400 font-medium text-[10px] lg:text-xs">{row.trip.date}</td>
-                                  <td className="py-2 lg:py-2.5 px-2 lg:px-3 font-mono font-bold text-slate-900 text-xs">{row.trip.vehicleNumber}</td>
+                                  <td className="py-2 lg:py-2.5 px-2 lg:px-3 text-slate-400 font-medium text-[10px] lg:text-xs">{row.trip.trip_date_display}</td>
+                                  <td className="py-2 lg:py-2.5 px-2 lg:px-3 font-mono font-bold text-slate-900 text-xs">{row.trip.vehicle_number}</td>
                                   <td className="py-2 lg:py-2.5 px-2 lg:px-3">
                                     <input
                                       type="text"
@@ -798,31 +821,42 @@ export default function GenerationsHub() {
 
                     {/* Mobile Card View for Bills */}
                     <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
-                      {bills.filter(b => selectedParty ? b.partyName === selectedParty : true).map(bill => (
+                      {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).map(bill => (
                         <div key={bill.id} className="border border-neutral-200 rounded-lg p-3 space-y-2 bg-white">
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={selectedBillIds.includes(bill.id)}
-                                disabled={bill.status === "Invoiced"}
-                                onChange={() => handleToggleBillSelect(bill.id)}
-                                className="h-4 w-4 text-sky-600 rounded cursor-pointer disabled:opacity-20"
-                              />
-                              <span className="font-mono font-bold text-slate-500 text-xs">{bill.lrNumber}</span>
+                              {bill.status === "Invoiced" ? (
+                                // SHOW: Ticked Checkbox (read-only)
+                                <input
+                                  type="checkbox"
+                                  checked={true}
+                                  disabled={true}
+                                  className="h-4 w-4 text-emerald-600 rounded cursor-not-allowed opacity-100"
+                                />
+                              ) : (
+                                // SHOW: Selectable Checkbox
+                                <input
+                                  type="checkbox"
+                                  checked={selectedBillIds.includes(bill.id)}
+                                  disabled={false}
+                                  onChange={() => handleToggleBillSelect(bill.id)}
+                                  className="h-4 w-4 text-sky-600 rounded cursor-pointer"
+                                />
+                              )}
+                              <span className="font-mono font-bold text-slate-500 text-xs">{bill.lr_number}</span>
                             </div>
                             <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${bill.status === "Pending Invoice" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
                               {bill.status}
                             </span>
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 text-sm">{bill.vehicleNumber}</div>
-                            <div className="text-[10px] text-slate-400">[{bill.partyName}]</div>
+                            <div className="font-bold text-slate-900 text-sm">{bill.vehicle_number}</div>
+                            <div className="text-[10px] text-slate-400">[{bill.party_name}]</div>
                           </div>
-                          <div className="text-[10px] text-slate-500 truncate">{bill.routeSequence}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{bill.route_sequence}</div>
                           <div className="flex items-center justify-between pt-1">
                             <span className="font-mono font-bold text-slate-950 text-xs">
-                              {bill.totalAmount === 0 ? <span className="text-rose-600 italic">₹ 0 (Open Rate)</span> : `₹ ${bill.totalAmount.toLocaleString("en-IN")}`}
+                              {bill.total_amount === 0 ? <span className="text-rose-600 italic">₹ 0 (Open Rate)</span> : `₹ ${bill.total_amount.toLocaleString("en-IN")}`}
                             </span>
                             <div className="space-x-2">
                               <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleTriggerEdit(bill)} className="text-[10px] text-sky-600 disabled:opacity-30 font-bold hover:underline">
@@ -835,7 +869,7 @@ export default function GenerationsHub() {
                           </div>
                         </div>
                       ))}
-                      {bills.filter(b => selectedParty ? b.partyName === selectedParty : true).length === 0 && (
+                      {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).length === 0 && (
                         <div className="text-center text-slate-400 text-xs py-8">No bills found</div>
                       )}
                     </div>
@@ -846,7 +880,7 @@ export default function GenerationsHub() {
                         <thead>
                           <tr className="border-b border-neutral-200 text-slate-400 text-[10px] sm:text-xs font-bold uppercase bg-neutral-50/80">
                             <th className="py-2.5 px-3 sm:px-4 w-12">Select</th>
-                            <th className="py-2.5 px-3 sm:px-4">LR Slip</th>
+                            <th className="py-2.5 px-3 sm:px-4 whitespace-nowrap">LR Slip</th>
                             <th className="py-2.5 px-3 sm:px-4">Vehicle Details</th>
                             <th className="py-2.5 px-3 sm:px-4">Current Total (₹)</th>
                             <th className="py-2.5 px-3 sm:px-4">Status</th>
@@ -854,18 +888,33 @@ export default function GenerationsHub() {
                           </tr>
                         </thead>
                         <tbody className="divide-y text-xs font-medium text-slate-700">
-                          {bills.filter(b => selectedParty ? b.partyName === selectedParty : true).map(bill => (
+                          {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).map(bill => (
                             <tr key={bill.id} className="hover:bg-neutral-50/40">
                               <td className="py-3.5 px-3 sm:px-4">
-                                <input type="checkbox" checked={selectedBillIds.includes(bill.id)} disabled={bill.status === "Invoiced"} onChange={() => handleToggleBillSelect(bill.id)} className="h-4 w-4 text-sky-600 rounded cursor-pointer disabled:opacity-20" />
+                                {bill.status === "Invoiced" ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={true}
+                                    disabled={true}
+                                    className="h-4 w-4 text-emerald-600 rounded cursor-not-allowed opacity-100"
+                                  />
+                                ) : (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedBillIds.includes(bill.id)}
+                                    disabled={false}
+                                    onChange={() => handleToggleBillSelect(bill.id)}
+                                    className="h-4 w-4 text-sky-600 rounded cursor-pointer"
+                                  />
+                                )}
                               </td>
-                              <td className="py-3.5 px-3 sm:px-4 font-mono font-bold text-slate-500 text-xs">{bill.lrNumber}</td>
+                              <td className="py-3.5 px-3 sm:px-4 font-mono font-bold text-slate-500 text-xs whitespace-nowrap">{bill.lr_number}</td>
                               <td className="py-3.5 px-3 sm:px-4">
-                                <div className="font-bold text-slate-900 text-xs sm:text-sm">{bill.vehicleNumber} <span className="text-slate-400 font-normal text-[10px] sm:text-xs">[{bill.partyName}]</span></div>
-                                <div className="text-[10px] sm:text-[11px] text-slate-400 truncate max-w-xs">{bill.routeSequence}</div>
+                                <div className="font-bold text-slate-900 text-xs sm:text-sm">{bill.vehicle_number} <span className="text-slate-400 font-normal text-[10px] sm:text-xs">[{bill.party_name}]</span></div>
+                                <div className="text-[10px] sm:text-[11px] text-slate-400 truncate max-w-xs">{bill.route_sequence}</div>
                               </td>
                               <td className="py-3.5 px-3 sm:px-4 font-mono font-bold text-slate-950 text-xs sm:text-sm">
-                                {bill.totalAmount === 0 ? <span className="text-rose-600 font-semibold italic">₹ 0 (Open Rate)</span> : `₹ ${bill.totalAmount.toLocaleString("en-IN")}`}
+                                {bill.total_amount === 0 ? <span className="text-rose-600 font-semibold italic">₹ 0 (Open Rate)</span> : `₹ ${bill.total_amount.toLocaleString("en-IN")}`}
                               </td>
                               <td className="py-3.5 px-3 sm:px-4">
                                 <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded ${bill.status === "Pending Invoice" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800"}`}>
@@ -897,7 +946,7 @@ export default function GenerationsHub() {
                           <div><strong>Billed Client:</strong> <span className="text-slate-900 font-bold ">{selectedParty}</span></div>
                           <div className="pt-2 border-t font-bold text-slate-900 flex justify-between text-xs sm:text-sm">
                             <span>Subtotal Base Net:</span>
-                            <span>₹ {bills.filter(b => selectedBillIds.includes(b.id)).reduce((a, b) => a + b.totalAmount, 0).toLocaleString("en-IN")}</span>
+                            <span>₹ {bills.filter(b => selectedBillIds.includes(b.id)).reduce((a, b) => a + b.total_amount, 0).toLocaleString("en-IN")}</span>
                           </div>
                         </div>
                         <button
@@ -929,12 +978,12 @@ export default function GenerationsHub() {
                   {invoices.length === 0 ? (
                     <div className="text-xs text-slate-400 italic text-center col-span-2 py-12 bg-neutral-50 rounded-xl border">No invoices generated inside local repositories yet.</div>
                   ) : invoices.map(inv => (
-                    <div key={inv.id} className="border border-neutral-200 p-4 sm:p-5 rounded-xl bg-neutral-50/30 flex flex-col justify-between space-y-3 sm:space-y-4 shadow-sm hover:border-neutral-300 transition-colors">
+                    <div key={inv._id} className="border border-neutral-200 p-4 sm:p-5 rounded-xl bg-neutral-50/30 flex flex-col justify-between space-y-3 sm:space-y-4 shadow-sm hover:border-neutral-300 transition-colors">
                       <div className="flex justify-between items-start flex-wrap gap-2">
                         <div>
-                          <span className="font-mono text-[9px] sm:text-[10px] font-bold bg-neutral-200 px-2 py-0.5 rounded text-slate-600">{inv.invoiceNumber}</span>
-                          <h4 className="font-bold text-sm sm:text-base text-slate-900 mt-2 ">{inv.clientName}</h4>
-                          <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Tied manifests: {inv.billsBundled.length} items • Issued: {inv.date}</p>
+                          <span className="font-mono text-[9px] sm:text-[10px] font-bold bg-neutral-200 px-2 py-0.5 rounded text-slate-600">{inv.invoice_number}</span>
+                          <h4 className="font-bold text-sm sm:text-base text-slate-900 mt-2 ">{inv.client_name || "Client"}</h4>
+                          <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Tied manifests: {inv.bills_bundled.length} items • Issued: {inv.date}</p>
                         </div>
                         <div className="flex lg:flex-col w-full md:w-fit justify-between gap-2">
                           <button
@@ -947,7 +996,7 @@ export default function GenerationsHub() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteInvoice(inv.id)}
+                            onClick={() => handleDeleteInvoice(inv.invoice_number)}
                             className="text-[9px] sm:text-[11px] font-bold text-rose-600 hover:underline text-right bg-transparent border-none outline-none cursor-pointer"
                           >
                             Erase Invoice
@@ -957,7 +1006,7 @@ export default function GenerationsHub() {
                       <div className="pt-2 border-t border-neutral-200/60 font-mono font-bold text-slate-800 flex justify-between text-[10px] sm:text-xs items-center flex-wrap gap-2">
                         <span>Invoice Grand Total (Inc. GST):</span>
                         <span style={{ color: systemSettings.billUI.themeColor, backgroundColor: `${systemSettings.billUI.themeColor}10`, borderColor: `${systemSettings.billUI.themeColor}20` }} className="text-xs sm:text-sm border font-bold px-2 py-0.5 sm:py-1 rounded-md">
-                          ₹ {Math.round(inv.grandTotal).toLocaleString("en-IN")}
+                          ₹ {Math.round(inv.grand_total).toLocaleString("en-IN")}
                         </span>
                       </div>
                     </div>
@@ -1012,7 +1061,7 @@ export default function GenerationsHub() {
                 </div>
                 <div className="text-left sm:text-right w-full sm:w-auto">
                   <h3 style={{ color: systemSettings.billUI.themeColor }} className="text-base sm:text-lg font-black uppercase tracking-wide">Tax Invoice</h3>
-                  <p className="font-mono text-slate-500 font-bold mt-1 text-[10px] sm:text-[11px]">{activePrintInvoice.invoiceNumber}</p>
+                  <p className="font-mono text-slate-500 font-bold mt-1 text-[10px] sm:text-[11px]">{activePrintInvoice.invoice_number}</p>
                   <p className="text-slate-400 text-[9px] sm:text-[10px] mt-0.5">Date Issued: {activePrintInvoice.date}</p>
                 </div>
               </div>
@@ -1020,7 +1069,7 @@ export default function GenerationsHub() {
               <div className="bg-neutral-50 border p-3 sm:p-4 rounded-xl text-[10px] sm:text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 print:bg-transparent">
                 <div>
                   <span className="font-bold text-slate-400 uppercase tracking-wider block">Billed Client Party:</span>
-                  <div className="font-black text-slate-900 mt-1 text-sm sm:text-base ">{activePrintInvoice.clientName}</div>
+                  <div className="font-black text-slate-900 mt-1 text-sm sm:text-base ">{activePrintInvoice.client_name}</div>
                   <div className="text-slate-500 font-medium mt-0.5 text-[10px]">Corporate Supply Chain Account</div>
                 </div>
                 <div className="sm:text-right">
@@ -1043,20 +1092,20 @@ export default function GenerationsHub() {
                     </tr>
                   </thead>
                   <tbody className="divide-y font-medium text-[10px] sm:text-xs">
-                    {bills.filter(b => activePrintInvoice.billsBundled.includes(b.id)).map(b => (
+                    {bills.filter(b => activePrintInvoice.bills_bundled.includes(b.id)).map(b => (
                       <tr key={b.id} className="text-slate-700">
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-mono font-bold text-slate-500">{b.lrNumber}</td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-bold text-slate-900">{b.vehicleNumber}</td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-mono font-bold text-slate-500">{b.lr_number}</td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-bold text-slate-900">{b.vehicle_number}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3">
-                          <div>{b.routeSequence}</div>
+                          <div>{b.route_sequence}</div>
                           <div className="text-[9px] sm:text-[10px] text-slate-400 font-normal">To: {b.destination}</div>
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono">₹ {Math.round(b.freight).toLocaleString("en-IN")}</td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono text-rose-600">
-                          {b.totalExtraCharge > 0 ? `₹ ${b.totalExtraCharge.toLocaleString("en-IN")}` : "-"}
+                          {b.total_extra_charge > 0 ? `₹ ${b.total_extra_charge.toLocaleString("en-IN")}` : "-"}
                         </td>
                         <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono font-bold">
-                          ₹ {Math.round(b.totalAmount).toLocaleString("en-IN")}
+                          ₹ {Math.round(b.total_amount).toLocaleString("en-IN")}
                         </td>
                       </tr>
                     ))}
@@ -1072,12 +1121,12 @@ export default function GenerationsHub() {
                 {systemSettings.billUI.showGst && (
                   <div className="flex justify-between font-medium text-slate-400 text-[10px] sm:text-[11px]">
                     <span>Transport GST Sacc (18%):</span>
-                    <span className="font-mono">₹ {activePrintInvoice.gstAmount.toLocaleString("en-IN")}</span>
+                    <span className="font-mono">₹ {activePrintInvoice.gst_amount.toLocaleString("en-IN")}</span>
                   </div>
                 )}
                 <div style={{ color: systemSettings.billUI.themeColor }} className="flex justify-between font-black text-sm sm:text-base pt-2 border-t border-dashed">
                   <span>Grand Account Total:</span>
-                  <span className="font-mono">₹ {Math.round(activePrintInvoice.grandTotal).toLocaleString("en-IN")}</span>
+                  <span className="font-mono">₹ {Math.round(activePrintInvoice.grand_total).toLocaleString("en-IN")}</span>
                 </div>
               </div>
 

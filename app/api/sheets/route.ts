@@ -1,54 +1,14 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
-const TRIPS_DIR = path.join(process.cwd(), "data", "trips");
-
-function ensureDirectoryExists(dirPath: string) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
-
-// Helper to determine the target trip file path based on a given date string ("2026-05-11")
-function getTripsFilePath(dateString: string): string {
-  ensureDirectoryExists(TRIPS_DIR);
-  const dateObj = new Date(dateString);
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const year = dateObj.getFullYear();
-  return path.join(TRIPS_DIR, `trips-${month}-${year}.json`);
-}
-
-function formatToSheetDate(dateString: string): string {
-  const dateObj = new Date(dateString);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${dateObj.getDate()}-${months[dateObj.getMonth()]}`;
-}
-
-// Fixed month index mapping handler to maintain cross-year time-sorting states
-function parseDisplayDateToTime(displayDate: string, targetYear: number): number {
-  const parts = displayDate.split("-"); // [ "11", "May" ]
-  if (parts.length < 2) return 0;
-  
-  const day = parseInt(parts[0], 10);
-  const monthStr = parts[1].toLowerCase().substring(0, 3);
-  const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-  const monthIndex = months.indexOf(monthStr);
-  
-  // Safe validation check fallback
-  const validMonth = monthIndex !== -1 ? monthIndex : 5;
-  return new Date(targetYear, validMonth, day, 12, 0, 0).getTime(); // Mid-day stamp prevents UTC shifts
-}
+import { connectToDatabase } from "@/lib/connectDB";
+import { Trip } from "@/models/dataModels";
 
 // ==========================================
-//  POST PIPELINE: Save / Update Route Logs
+//  POST: Save / Update Trip Logs
 // ==========================================
 export async function POST(request: Request) {
   try {
-    ensureDirectoryExists(TRIPS_DIR);
-
-    const body = await request.json();
-    const { data } = body; 
+    await connectToDatabase();
+    const { data } = await request.json();
 
     if (!data || !data.date || !data.vehicleNumber) {
       return NextResponse.json(
@@ -57,175 +17,92 @@ export async function POST(request: Request) {
       );
     }
 
-    const currentDayStr = formatToSheetDate(data.date);
-    const targetVehicle = data.vehicleNumber.trim();
-    const targetDriver = data.driverName.trim() || "None";
-    const targetYear = new Date(data.date).getFullYear();
+    // Helper: Convert "2026-05-11" to "11-May-2026"
+    const dateObj = new Date(data.date);
 
-    const activeFilePath = getTripsFilePath(data.date);
-    
-    let dailyLogGroup: any[] = [];
-    if (fs.existsSync(activeFilePath)) {
-      const fileContent = fs.readFileSync(activeFilePath, "utf-8").trim();
-      if (fileContent) dailyLogGroup = JSON.parse(fileContent);
-    }
-
-    let dayBucket = dailyLogGroup.find((group) => group.currentDay === currentDayStr);
-
-    if (!dayBucket) {
-      dayBucket = {
-        currentDay: currentDayStr,
-        trips: [],
-      };
-      dailyLogGroup.push(dayBucket);
-    }
-
-    const vehicleExistingTripIndex = dayBucket.trips.findIndex(
-      (t: any) => t.vehicleNumber.toLowerCase() === targetVehicle.toLowerCase()
-    );
-
-    const tripDataPayload = {
-      id: data.id || `TRIP-${targetVehicle}-${Date.now()}`,
-      vehicleNumber: targetVehicle,
-      driverName: targetDriver,
-      routeSequence: data.routeSequence,
+    const tripPayload = {
+      id: data.id || `TRIP-${data.vehicleNumber.trim()}-${Date.now()}`,
+      trip_date_display: data.date, 
+      sort_timestamp: dateObj.getTime(), 
+      vehicle_number: data.vehicleNumber.trim(),
+      driver_name: data.driverName?.trim() || "None",
+      route_sequence: data.routeSequence,
     };
 
-    if (vehicleExistingTripIndex !== -1) {
-      dayBucket.trips[vehicleExistingTripIndex] = tripDataPayload;
-    } else {
-      dayBucket.trips.push(tripDataPayload);
-    }
-
-    dailyLogGroup.sort((a, b) => {
-      return parseDisplayDateToTime(a.currentDay, targetYear) - parseDisplayDateToTime(b.currentDay, targetYear);
-    });
-
-    fs.writeFileSync(activeFilePath, JSON.stringify(dailyLogGroup, null, 2), "utf-8");
+    await Trip.findOneAndUpdate(
+      { id: tripPayload.id },
+      tripPayload,
+      { upsert: true, new: true }
+    );
 
     return NextResponse.json({
       success: true,
-      message: `Log verified and successfully saved locally under shard [${path.basename(activeFilePath)}]`,
+      message: "Log successfully persisted to MongoDB.",
     });
-
   } catch (error: any) {
-    console.error("Local JSON Write Pipeline Crash:", error);
+    console.error("MongoDB Write Error:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Internal Server Data Persistence Error" },
+      { success: false, message: error.message || "Persistence Error" },
       { status: 500 }
     );
   }
 }
 
 // ==========================================
-//  GET PIPELINE: Read & Stream Data Logs
+//  GET: Read & Stream Data Logs
 // ==========================================
 export async function GET() {
   try {
-    ensureDirectoryExists(TRIPS_DIR);
+    await connectToDatabase();
 
-    const files = fs.readdirSync(TRIPS_DIR).filter(f => f.startsWith("trips-") && f.endsWith(".json"));
-    const flattenedTrips: any[] = [];
+    const trips = await Trip.find({}).sort({ sort_timestamp: -1 });
 
-    files.forEach((file) => {
-      const filePath = path.join(TRIPS_DIR, file);
-      const fileContent = fs.readFileSync(filePath, "utf-8").trim();
-      if (!fileContent) return;
+    // 2. Format for your existing frontend
+    const flattenedTrips = trips.map(t => ({
+      id: t.id,
+      date: t.trip_date_display, 
+      vehicleNumber: t.vehicle_number,
+      driverName: t.driver_name,
+      routeSequence: t.route_sequence,
+    }));
 
-      const dailyLogGroup = JSON.parse(fileContent);
-
-      // Extract year value dynamically out of filename context ("trips-05-2026.json" -> 2026)
-      const yearMatch = file.match(/trips-\d+-(\d+)\.json/);
-      const fileYear = yearMatch ? parseInt(yearMatch[1], 10) : 2026;
-
-      dailyLogGroup.forEach((group: any) => {
-        const isoFormattedDate = parseDisplayDateToTime(group.currentDay, fileYear);
-        const dateInstance = new Date(isoFormattedDate);
-        
-        const yyyy = dateInstance.getFullYear();
-        const mm = String(dateInstance.getMonth() + 1).padStart(2, "0");
-        const dd = String(dateInstance.getDate()).padStart(2, "0");
-        const yyyyMmDd = `${yyyy}-${mm}-${dd}`;
-
-        group.trips.forEach((trip: any) => {
-          flattenedTrips.push({
-            id: trip.id,
-            date: yyyyMmDd, 
-            vehicleNumber: trip.vehicleNumber,
-            driverName: trip.driverName,
-            routeSequence: trip.routeSequence,
-          });
-        });
-      });
+    return NextResponse.json({ 
+      success: true, 
+      data: flattenedTrips 
     });
-
-    // Chronologically sort compiled global stack output so May items line up seamlessly above June lines
-    flattenedTrips.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    return NextResponse.json({
-      success: true,
-      data: flattenedTrips,
-    });
-
+    
   } catch (error: any) {
-    console.error("Local JSON Read Pipeline Crash:", error);
+    console.error("MongoDB Read Error:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Internal Server Data Reading Fault" },
+      { success: false, message: error.message || "Reading Fault" },
       { status: 500 }
     );
   }
 }
 
 // ==========================================
-//  DELETE PIPELINE: Remove Target Log Row
+//  DELETE: Remove Log Row
 // ==========================================
 export async function DELETE(request: Request) {
   try {
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { success: false, message: "Missing required identifier parameter" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: "Missing identifier" }, { status: 400 });
     }
 
-    ensureDirectoryExists(TRIPS_DIR);
-    const files = fs.readdirSync(TRIPS_DIR).filter(f => f.startsWith("trips-") && f.endsWith(".json"));
-    let removed = false;
-
-    for (const file of files) {
-      const filePath = path.join(TRIPS_DIR, file);
-      const fileContent = fs.readFileSync(filePath, "utf-8");
-      let dailyLogGroup: any[] = JSON.parse(fileContent);
-
-      let altered = false;
-      dailyLogGroup = dailyLogGroup.map((group) => {
-        const originalLength = group.trips.length;
-        group.trips = group.trips.filter((trip: any) => trip.id !== id);
-        if (group.trips.length !== originalLength) {
-          altered = true;
-          removed = true;
-        }
-        return group;
-      }).filter((group) => group.trips.length > 0);
-
-      if (altered) {
-        fs.writeFileSync(filePath, JSON.stringify(dailyLogGroup, null, 2), "utf-8");
-        break; // Purge action complete, exit lookups loop safely
-      }
-    }
+    const result = await Trip.findOneAndDelete({ id });
 
     return NextResponse.json({
-      success: removed,
-      message: removed ? "Notary route log successfully removed from persistence layers." : "Log not found."
+      success: !!result,
+      message: result ? "Log successfully removed." : "Log not found."
     });
-
   } catch (error: any) {
-    console.error("Local JSON Delete Pipeline Crash:", error);
+    console.error("MongoDB Delete Error:", error);
     return NextResponse.json(
-      { success: false, message: error?.message || "Internal Server Data Removal Fault" },
+      { success: false, message: error.message || "Removal Fault" },
       { status: 500 }
     );
   }
@@ -262,11 +139,6 @@ export async function DELETE(request: Request) {
 //       );
 //     }
 
-//     console.log("Sending to Google Apps Script:", {
-//       action,
-//       data,
-//     });
-
 //     const googleResponse = await fetch(googleWebAppUrl, {
 //       method: "POST",
 //       headers: {
@@ -280,7 +152,6 @@ export async function DELETE(request: Request) {
 //     });
 
 //     const responseText = await googleResponse.text();
-//     console.log("Response Data:-", responseText)
 
 //     let result: any;
 
@@ -341,8 +212,6 @@ export async function DELETE(request: Request) {
 //     });
 
 //     const data = await response.json();
-    
-//     console.log("Live Sheets Data Matrix Extracted:", data);
 
 //     // 3. Forward the clean JSON data structure directly back to the frontend
 //     return NextResponse.json(data);

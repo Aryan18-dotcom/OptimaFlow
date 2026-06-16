@@ -1,30 +1,30 @@
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
-
-const TRIPS_DIR = path.join(process.cwd(), "data", "trips");
+import { connectToDatabase } from "@/lib/connectDB";
+import { Trip } from "@/models/dataModels";
 
 export async function GET() {
   try {
-    // 1. Fetch all data for the current year (2026)
-    const files = fs.readdirSync(TRIPS_DIR).filter(f => f.endsWith("-2026.json"));
-    const results: any[] = [];
+    await connectToDatabase();
 
-    files.forEach(file => {
-      const data = JSON.parse(fs.readFileSync(path.join(TRIPS_DIR, file), "utf-8"));
-      data.forEach((group: any) => results.push(...group.trips));
-    });
+    // 1. Fetch all trip data from MongoDB
+    const trips = await Trip.find({}).sort({ trip_date: -1 });
 
-    if (results.length === 0) {
-      return NextResponse.json({ success: false, message: "No data available for 2026." }, { status: 404 });
+    if (!trips || trips.length === 0) {
+      return NextResponse.json({ success: false, message: "No data available." }, { status: 404 });
     }
 
-    // 2. Convert JSON to CSV format
-    const headers = ["ID", "Vehicle Number", "Driver Name", "Route Sequence"];
+    // 2. Convert to CSV format
+    const headers = ["ID", "Vehicle Number", "Driver Name", "Route Sequence", "Date"];
     const csvRows = [
       headers.join(","),
-      ...results.map(row => 
-        [row.id, row.vehicleNumber, row.driverName, `"${row.routeSequence.replace(/"/g, '""')}"`].join(",")
+      ...trips.map(row => 
+        [
+          row.id, 
+          row.vehicle_number, 
+          row.driver_name, 
+          `"${row.route_sequence?.replace(/"/g, '""') || ""}"`,
+          row.trip_date?.toISOString().split('T')[0]
+        ].join(",")
       )
     ];
 
@@ -35,11 +35,12 @@ export async function GET() {
       status: 200,
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="logistics-export-2026.csv"`,
+        "Content-Disposition": `attachment; filename="logistics-export-${new Date().getFullYear()}.csv"`,
       },
     });
 
   } catch (error: any) {
+    console.error("Export Error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

@@ -1,106 +1,65 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
-const BILLS_DIR = path.join(process.cwd(), "data", "bills");
-const INVOICES_DIR = path.join(process.cwd(), "data", "invoices");
-const SETTINGS_FILE_PATH = path.join(process.cwd(), "data", "settings.json");
-
-function ensureDirectoryExists(dirPath: string) {
-  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
-}
-
-function getQuarterShardPath(directory: string, prefix: string, dateInput?: string): string {
-  ensureDirectoryExists(directory);
-  const targetDate = dateInput ? new Date(dateInput) : new Date();
-  const year = targetDate.getFullYear();
-  const quarter = Math.ceil((targetDate.getMonth() + 1) / 3);
-  return path.join(directory, `${prefix}-Q${quarter}-${year}.json`);
-}
-
-function loadAllQuarterFiles(directory: string, prefix: string): any[] {
-  ensureDirectoryExists(directory);
-  const files = fs.readdirSync(directory).filter(f => f.startsWith(`${prefix}-`) && f.endsWith(".json"));
-  let compiledArray: any[] = [];
-  files.forEach(file => {
-    const raw = fs.readFileSync(path.join(directory, file), "utf-8").trim();
-    if (raw) compiledArray = compiledArray.concat(JSON.parse(raw));
-  });
-  return compiledArray;
-}
+import { connectToDatabase } from "@/lib/connectDB";
+import { Bill, Invoice, Setting } from "@/models/dataModels";
 
 // ==========================================
-//  GET: LOAD COMBINED INVOICES LIST
+//  GET: LOAD ALL INVOICES
 // ==========================================
 export async function GET() {
   try {
-    const invoices = loadAllQuarterFiles(INVOICES_DIR, "invoices");
+    await connectToDatabase();
+    
+    // Sort invoices by date descending
+    const invoices = await Invoice.find({}).sort({ date: -1 });
+    
     return NextResponse.json({ success: true, invoices });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error?.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
 // ==========================================
-//  POST: BUNDLE TAX INVOICE IN QUARTER SHARD
+//  POST: CREATE TAX INVOICE & BUNDLE BILLS
 // ==========================================
 export async function POST(request: Request) {
   try {
-    const frontendPayload = await request.json();
-    
-    if (!frontendPayload || !frontendPayload.billsBundled || frontendPayload.billsBundled.length === 0) {
-      return NextResponse.json({ success: false, message: "Missing required bundled manifests." }, { status: 400 });
+    await connectToDatabase();
+    const { billsBundled, clientName, date } = await request.json();
+
+    if (!billsBundled || billsBundled.length === 0) {
+      return NextResponse.json({ success: false, message: "No bills selected for bundling." }, { status: 400 });
     }
 
-    const settings = fs.existsSync(SETTINGS_FILE_PATH) ? JSON.parse(fs.readFileSync(SETTINGS_FILE_PATH, "utf-8")) : {};
-    const billsQuarterFiles = fs.readdirSync(BILLS_DIR).filter(f => f.startsWith("bills-") && f.endsWith(".json"));
+    // 1. Fetch settings to calculate GST
+    const settings = await Setting.findOne({ key: "appSettings" });
+    const shouldApplyGst = settings?.value?.billUI?.showGst !== false;
 
-    // 1. Re-fetch bundled bills across shards to calculate subtotal safely
-    let targetBills: any[] = [];
-    billsQuarterFiles.forEach(file => {
-      const filePath = path.join(BILLS_DIR, file);
-      let fileBills = JSON.parse(fs.readFileSync(filePath, "utf-8") || "[]");
-      
-      // Lock status of matching bills to Invoiced
-      let changed = false;
-      fileBills = fileBills.map((b: any) => {
-        if (frontendPayload.billsBundled.includes(b.id)) {
-          targetBills.push(b);
-          changed = true;
-          return { ...b, status: "Invoiced" };
-        }
-        return b;
-      });
-      if (changed) fs.writeFileSync(filePath, JSON.stringify(fileBills, null, 2), "utf-8");
+    // 2. Fetch all bills being bundled to calculate totals
+    const targetBills = await Bill.find({ id: { $in: billsBundled } });
+    const subtotal = targetBills.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
+    const gstAmount = shouldApplyGst ? Math.round(subtotal * 0.18) : 0;
+
+    // 3. Create the Invoice document
+    const newInvoice = await Invoice.create({
+      invoice_number: `INV-${Date.now().toString().slice(-6)}`,
+      date: date || new Date().toISOString().split("T")[0],
+      party_name: clientName || targetBills[0]?.party_name || "General Client",
+      subtotal,
+      gst_amount: gstAmount,
+      grand_total: subtotal + gstAmount,
+      bills_bundled: billsBundled,
+      status: 'Generated'
     });
 
-    const calculatedSubtotal = targetBills.reduce((sum: number, b: any) => sum + (b.totalAmount || 0), 0);
-    const shouldApplyGst = settings.billUI?.showGst !== false;
-    const calculatedGstAmount = shouldApplyGst ? Math.round(calculatedSubtotal * 0.18) : 0;
+    // 4. Update the bundled bills to 'Invoiced' status and link them to this invoice
+    await Bill.updateMany(
+      { id: { $in: billsBundled } },
+      { status: "Invoiced", invoice_id: newInvoice.invoice_number }
+    );
 
-    const fullyConfiguredInvoice = {
-      id: `INV-${Date.now().toString().slice(-4)}`,
-      invoiceNumber: `${settings.companyLogoText || "CHHEDA"}-TS-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
-      date: new Date().toISOString().split("T")[0],
-      clientName: frontendPayload.clientName || targetBills[0]?.partyName || "General Client Account",
-      billsBundled: frontendPayload.billsBundled,
-      subtotal: calculatedSubtotal,
-      gstAmount: calculatedGstAmount,
-      grandTotal: calculatedSubtotal + calculatedGstAmount
-    };
-
-    // Save invoice to the correct current Quarter Shard
-    const activeShardPath = getQuarterShardPath(INVOICES_DIR, "invoices", fullyConfiguredInvoice.date);
-    let shardInvoices = [];
-    if (fs.existsSync(activeShardPath)) {
-      shardInvoices = JSON.parse(fs.readFileSync(activeShardPath, "utf-8") || "[]");
-    }
-    shardInvoices.unshift(fullyConfiguredInvoice);
-    fs.writeFileSync(activeShardPath, JSON.stringify(shardInvoices, null, 2), "utf-8");
-
-    return NextResponse.json({ success: true, invoice: fullyConfiguredInvoice });
+    return NextResponse.json({ success: true, invoice: newInvoice });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error?.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
@@ -109,47 +68,27 @@ export async function POST(request: Request) {
 // ==========================================
 export async function DELETE(request: Request) {
   try {
+    await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const invoiceId = searchParams.get("id");
-    if (!invoiceId) return NextResponse.json({ success: false, message: "Missing Invoice ID" }, { status: 400 });
 
-    ensureDirectoryExists(INVOICES_DIR);
-    const invFiles = fs.readdirSync(INVOICES_DIR).filter(f => f.startsWith("invoices-") && f.endsWith(".json"));
-    let targetedInvoice: any = null;
+    if (!invoiceId) return NextResponse.json({ success: false, message: "Missing ID" }, { status: 400 });
 
-    // 1. Locate and remove the invoice record from its quarter shard
-    for (const file of invFiles) {
-      const filePath = path.join(INVOICES_DIR, file);
-      let shardInvoices = JSON.parse(fs.readFileSync(filePath, "utf-8") || "[]");
-      targetedInvoice = shardInvoices.find((inv: any) => inv.id === invoiceId);
-      
-      if (targetedInvoice) {
-        shardInvoices = shardInvoices.filter((inv: any) => inv.id !== invoiceId);
-        fs.writeFileSync(filePath, JSON.stringify(shardInvoices, null, 2), "utf-8");
-        break;
-      }
-    }
+    // 1. Find the invoice to know which bills were bundled
+    const invoice = await Invoice.findOne({ invoice_number: invoiceId });
+    if (!invoice) return NextResponse.json({ success: false, message: "Invoice not found" }, { status: 404 });
 
-    if (!targetedInvoice) return NextResponse.json({ success: false, message: "Invoice not found" }, { status: 404 });
+    // 2. Unlock the bills (reset status and clear invoice reference)
+    await Bill.updateMany(
+      { id: { $in: invoice.bills_bundled } },
+      { status: "Pending Invoice", invoice_id: null }
+    );
 
-    // 2. Return bundled bills back to Pending Invoice status across files
-    const billsQuarterFiles = fs.readdirSync(BILLS_DIR).filter(f => f.startsWith("bills-") && f.endsWith(".json"));
-    billsQuarterFiles.forEach(file => {
-      const filePath = path.join(BILLS_DIR, file);
-      let fileBills = JSON.parse(fs.readFileSync(filePath, "utf-8") || "[]");
-      let changed = false;
-      fileBills = fileBills.map((b: any) => {
-        if (targetedInvoice.billsBundled.includes(b.id)) {
-          changed = true;
-          return { ...b, status: "Pending Invoice" };
-        }
-        return b;
-      });
-      if (changed) fs.writeFileSync(filePath, JSON.stringify(fileBills, null, 2), "utf-8");
-    });
+    // 3. Delete the invoice
+    await Invoice.findOneAndDelete({ invoice_number: invoiceId });
 
-    return NextResponse.json({ success: true, message: "Invoice deleted cleanly. Bills released." });
+    return NextResponse.json({ success: true, message: "Invoice deleted, bills unlocked." });
   } catch (error: any) {
-    return NextResponse.json({ success: false, message: error?.message }, { status: 500 });
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
