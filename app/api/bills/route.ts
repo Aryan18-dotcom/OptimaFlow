@@ -2,27 +2,74 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/connectDB";
 import { Bill, Trip, Invoice, Setting } from "@/models/dataModels";
 
+function formatRoute(sequence: string) {
+  if (!sequence) return sequence;
+
+  // Handles:
+  // Phenix(LD)[Kashindra]
+  // Baroda(MT)-Manjusar(LD)[SuryaShree]
+  const match = sequence.match(
+    /(?:.*?\(MT\)-)?(.*?)\(LD\)\[(.*?)\]/
+  );
+
+  if (match) {
+    return `${match[1].trim()} - ${match[2].trim()}`;
+  }
+
+  return sequence;
+}
+
 // ==========================================
 //  GET: AGGREGATE BILLS AND UNBILLED TRIPS
-// ==========================================
+// ========================================
 export async function GET() {
   try {
     await connectToDatabase();
-    
-    // Fetch all trips and all bills from MongoDB
-    const allTrips = await Trip.find({});
-    const currentBills = await Bill.find({});
 
-    // Filter unbilled trips: Trips that don't have an ID in currentBills
-    const billedTripIds = currentBills.map((b: any) => b.trip_id);
-    const unbilledTrips = allTrips.filter((t: any) => !billedTripIds.includes(t.id));
+    const allTrips = await Trip.find({}).lean();
+    const currentBills = await Bill.find({}).lean();
 
-    if(currentBills.length > 0){
-      return NextResponse.json({ success: true, bills: currentBills, unbilledTrips });
-    } else{
-      return NextResponse.json({ success: false, message: "There are currently 0 Bills." });
-    }
+    // 1. Identify all IDs that have already been billed
+    const billedTripIds = new Set<string>();
+    currentBills.forEach((bill: any) => {
+      if (Array.isArray(bill.trips)) {
+        bill.trips.forEach((trip: any) => {
+          if (trip.tripId) billedTripIds.add(String(trip.tripId));
+        });
+      }
+      // ALSO check if there's a direct reference if your schema uses one
+      if (bill.trip_id) billedTripIds.add(String(bill.trip_id));
+    });
+
+    // 2. Define Billable Logic
+    const isBillableTrip = (seq: string) => {
+      if (!seq) return false;
+      // Must contain a load point (LD) AND a final destination [x]
+      return seq.includes("(LD)") && seq.includes("[");
+    };
+
+    // 3. Filter: Apply both Billed status AND Billable logic
+    const unbilledTrips = allTrips
+      .filter((trip: any) => {
+        // Filter 1: Has this trip been billed?
+        const isAlreadyBilled = billedTripIds.has(String(trip._id)) || billedTripIds.has(String(trip.id));
+        if (isAlreadyBilled) return false;
+
+        // Filter 2: Is this a "real" billable route?
+        return isBillableTrip(trip.route_sequence);
+      })
+      .map((trip: any) => ({
+        ...trip,
+        route_sequence: formatRoute(trip.route_sequence),
+      }));
+
+    return NextResponse.json({
+      success: true,
+      bills: currentBills,
+      unbilledTrips,
+    });
   } catch (error: any) {
+    console.error("GET Bills Error:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

@@ -24,9 +24,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await connectToDatabase();
-    const { billsBundled, clientName, date } = await request.json();
+    const { bills_bundled, clientName, date } = await request.json();
 
-    if (!billsBundled || billsBundled.length === 0) {
+    if (!bills_bundled || bills_bundled.length === 0) {
       return NextResponse.json({ success: false, message: "No bills selected for bundling." }, { status: 400 });
     }
 
@@ -35,7 +35,8 @@ export async function POST(request: Request) {
     const shouldApplyGst = settings?.value?.billUI?.showGst !== false;
 
     // 2. Fetch all bills being bundled to calculate totals
-    const targetBills = await Bill.find({ id: { $in: billsBundled } });
+    const targetBills = await Bill.find({ id: { $in: bills_bundled } });
+    console.log(targetBills)
     const subtotal = targetBills.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
     const gstAmount = shouldApplyGst ? Math.round(subtotal * 0.18) : 0;
 
@@ -43,17 +44,17 @@ export async function POST(request: Request) {
     const newInvoice = await Invoice.create({
       invoice_number: `INV-${Date.now().toString().slice(-6)}`,
       date: date || new Date().toISOString().split("T")[0],
-      party_name: clientName || targetBills[0]?.party_name || "General Client",
+      client_name: clientName || targetBills[0]?.party_name || "General Client",
       subtotal,
       gst_amount: gstAmount,
       grand_total: subtotal + gstAmount,
-      bills_bundled: billsBundled,
+      bills_bundled: bills_bundled,
       status: 'Generated'
     });
 
     // 4. Update the bundled bills to 'Invoiced' status and link them to this invoice
     await Bill.updateMany(
-      { id: { $in: billsBundled } },
+      { id: { $in: bills_bundled } },
       { status: "Invoiced", invoice_id: newInvoice.invoice_number }
     );
 

@@ -38,7 +38,6 @@ const billSchema = new Schema({
     diten: { type: Number, default: 0 },
     advance: { type: Number, default: 0 },
     total_extra_charge: { type: Number, default: 0 },
-    base_fair: { type: Number, default: 0 },
     total_amount: { type: Number, default: 0 },
     status: { type: String, enum: ['Pending Invoice', 'Invoiced'], default: 'Pending Invoice' },
     invoice_id: String

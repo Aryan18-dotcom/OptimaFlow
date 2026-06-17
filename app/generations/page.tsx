@@ -28,7 +28,6 @@ interface Bill {
   diten: number;
   advance: number;
   total_extra_charge: number;
-  base_fair: number;
   total_amount: number;
   status: "Pending Invoice" | "Invoiced";
   details?: string;
@@ -64,7 +63,7 @@ interface SystemSettings {
 
 interface GridRowInput {
   trip: UnbilledTrip;
-  lrNumber: string;
+  lr_number: string;
   weight: string;
   rate: string;
   freight: string;
@@ -163,14 +162,15 @@ export default function GenerationsHub() {
       .filter(t => selectedTripIds.includes(t.id))
       .map(t => ({
         trip: t,
-        lrNumber: "",
+        lr_number: "",
         weight: "",
         rate: "",
         freight: "",
         diten: "",
         advance: "",
-        destination: t.destination
+        destination: t.route_sequence
       }));
+    console.log(compiledRows)
 
     setEditingBillId(null);
     setGridRows(compiledRows);
@@ -180,7 +180,16 @@ export default function GenerationsHub() {
 
   const handleGridRowChange = (index: number, fields: Partial<GridRowInput>) => {
     const updated = [...gridRows];
-    updated[index] = { ...updated[index], ...fields };
+    const currentRow = { ...updated[index], ...fields };
+
+    // Auto-calculate Freight if Weight or Rate changed
+    if (fields.weight !== undefined || fields.rate !== undefined) {
+      const weight = parseFloat(currentRow.weight) || 0;
+      const rate = parseFloat(currentRow.rate) || 0;
+      currentRow.freight = Math.round(weight * rate).toString();
+    }
+
+    updated[index] = currentRow;
     setGridRows(updated);
   };
 
@@ -198,7 +207,7 @@ export default function GenerationsHub() {
 
   const handleSaveBatchLedgerGrid = async () => {
     // 1. Validation
-    if (gridRows.some(r => !r.lrNumber.trim())) {
+    if (gridRows.some(r => !r.lr_number.trim())) {
       showToast("LR Slip Number inputs are mandatory for every checked row in the spreadsheet.", "warning");
       return;
     }
@@ -211,22 +220,22 @@ export default function GenerationsHub() {
         const activeAction = editingBillId ? "update" : "create";
 
         // 2. Direct Payload Mapping (No mixing or hidden calculations here)
+        console.log(row)
         const payload = {
           id: activeBillId,
-          tripId: row.trip.id,
+          trip_id: row.trip.id,
           date: row.trip.trip_date_display,
           vehicle_number: row.trip.vehicle_number,
           route_sequence: row.trip.route_sequence,
-          destination: row.destination.trim() || row.trip.destination,
-          lrNumber: row.lrNumber.trim(),
-          partyName: batchPartyName.trim(),
+          destination: row.destination || row.trip.destination,
+          lr_number: row.lr_number.trim(),
+          party_name: batchPartyName.trim(),
           weight: row.weight,
           rate: row.rate,
-          freight: parseFloat(row.freight) || 0,
+          freight: Math.round((parseFloat(row.weight) || 0) * (parseFloat(row.rate) || 0)),
           diten: parseFloat(row.diten) || 0,
           advance: parseFloat(row.advance) || 0,
-          totalExtraCharge: Math.round(parseFloat(row.freight) || 0 + parseFloat(row.diten) || 0 + parseFloat(row.diten) || 0),
-          baseFair: Math.round((parseFloat(row.weight) || 0) * (parseFloat(row.rate) || 0)),
+          total_extra_charge: Math.round(parseFloat(row.freight) || 0 + parseFloat(row.diten) || 0 + parseFloat(row.diten) || 0),
           total_amount: calculateRowBalance(row),
 
           status: editingBillId
@@ -269,14 +278,16 @@ export default function GenerationsHub() {
 
     const incompleteBills = matchedBills.filter(b => b.total_amount === 0);
     if (incompleteBills.length > 0) {
-      const incompleteLrNumbers = incompleteBills.map(b => b.lr_number).join(", ");
-      showToast(`Invoice compilation blocked! Unpriced rows found on: [ ${incompleteLrNumbers} ]`, "warning");
+      const incompleteLr_numbers = incompleteBills.map(b => b.lr_number).join(", ");
+      showToast(`Invoice compilation blocked! Unpriced rows found on: [ ${incompleteLr_numbers} ]`, "warning");
       return;
     }
 
     const subtotal = matchedBills.reduce((acc, b) => acc + b.total_amount, 0);
     const gst_amount = systemSettings.billUI.showGst ? Math.round(subtotal * 0.18) : 0;
     const grand_total = subtotal + gst_amount;
+
+    console.log(selectedBillIds)
 
     const newInvoice: Invoice = {
       _id: `INV-${Date.now().toString().slice(-4)}`,
@@ -322,7 +333,7 @@ export default function GenerationsHub() {
 
     setGridRows([{
       trip: mockTrip,
-      lrNumber: bill.lr_number,
+      lr_number: bill.lr_number,
       weight: String(bill.weight),
       rate: String(bill.rate),
       freight: String(bill.freight),
@@ -435,6 +446,11 @@ export default function GenerationsHub() {
                           placeholder="e.g., Adani Logistics Group"
                           value={batchPartyName}
                           onChange={e => setBatchPartyName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleProceedToGrid();
+                            }
+                          }}
                           className="bg-white border text-xs font-bold p-2 rounded-lg outline-none focus:border-sky-500 w-full sm:w-64 text-slate-800"
                         />
                       </div>
@@ -579,8 +595,8 @@ export default function GenerationsHub() {
                                 type="text"
                                 required
                                 placeholder="Slip Number"
-                                value={row.lrNumber}
-                                onChange={e => handleGridRowChange(index, { lrNumber: e.target.value })}
+                                value={row.lr_number}
+                                onChange={e => handleGridRowChange(index, { lr_number: e.target.value })}
                                 className="w-full bg-neutral-50 border border-neutral-300 p-2 rounded-lg font-mono font-bold outline-none focus:bg-white focus:border-sky-500 text-slate-900 text-sm"
                               />
                             </div>
@@ -640,10 +656,9 @@ export default function GenerationsHub() {
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Freight (₹)</label>
                                 <input
                                   type="number"
-                                  placeholder="Freight"
                                   value={row.freight}
-                                  onChange={e => handleGridRowChange(index, { freight: e.target.value })}
-                                  className="w-full border border-neutral-300 p-2 rounded-lg outline-none text-slate-900 font-mono text-right text-sm"
+                                  readOnly // Make this read-only since it's now auto-calculated
+                                  className="w-full border p-2 rounded-lg outline-none text-slate-500 font-mono text-right text-xs bg-neutral-100"
                                 />
                               </div>
                               <div>
@@ -706,8 +721,8 @@ export default function GenerationsHub() {
                                       type="text"
                                       required
                                       placeholder="Slip Num"
-                                      value={row.lrNumber}
-                                      onChange={e => handleGridRowChange(index, { lrNumber: e.target.value })}
+                                      value={row.lr_number}
+                                      onChange={e => handleGridRowChange(index, { lr_number: e.target.value })}
                                       className="w-full bg-neutral-50 border p-1.5 lg:p-2 rounded-lg font-mono font-bold outline-none focus:bg-white focus:border-sky-500 text-slate-900 border-neutral-300 shadow-inner text-xs"
                                     />
                                   </td>
@@ -744,10 +759,9 @@ export default function GenerationsHub() {
                                   <td className="py-2 lg:py-2.5 px-2 lg:px-3">
                                     <input
                                       type="number"
-                                      placeholder="Freight"
                                       value={row.freight}
-                                      onChange={e => handleGridRowChange(index, { freight: e.target.value })}
-                                      className="w-full border p-1.5 lg:p-2 rounded-lg outline-none text-slate-900 font-mono text-right text-xs"
+                                      readOnly // Make this read-only since it's now auto-calculated
+                                      className="w-full border p-2 rounded-lg outline-none text-slate-500 font-mono text-right text-xs bg-neutral-100"
                                     />
                                   </td>
                                   <td className="py-2 lg:py-2.5 px-2 lg:px-3">
@@ -1080,31 +1094,37 @@ export default function GenerationsHub() {
 
               {/* Responsive table with horizontal scroll on mobile */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-150">
+                <table className="w-full text-left border-collapse min-w-200">
                   <thead>
-                    <tr style={{ backgroundColor: `${systemSettings.billUI.themeColor}10` }} className="border-b-2 border-neutral-200 text-slate-500 font-bold text-[9px] sm:text-[10px] uppercase">
-                      <th className="py-2 px-2 sm:px-3">LR Slip</th>
-                      <th className="py-2 px-2 sm:px-3">Asset</th>
-                      <th className="py-2 px-2 sm:px-3">Route / Destination</th>
-                      <th className="py-2 px-2 sm:px-3 text-right">Freight</th>
-                      <th className="py-2 px-2 sm:px-3 text-right">Advance (-)</th>
-                      <th className="py-2 px-2 sm:px-3 text-right">Net</th>
+                    <tr style={{ backgroundColor: `${systemSettings.billUI.themeColor}10` }} className="border-b-2 border-neutral-200 text-slate-500 font-bold text-[9px] uppercase">
+                      <th className="py-3 px-3">LR Slip</th>
+                      <th className="py-3 px-3">Asset</th>
+                      <th className="py-3 px-3">Route / Destination</th>
+                      <th className="py-3 px-3 text-right">Weight (T)</th>
+                      <th className="py-3 px-3 text-right">Rate</th>
+                      <th className="py-3 px-3 text-right">Freight</th>
+                      <th className="py-3 px-3 text-right">Detention</th>
+                      <th className="py-3 px-3 text-right">Advance (-)</th>
+                      <th className="py-3 px-3 text-right">Net</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y font-medium text-[10px] sm:text-xs">
+                  <tbody className="divide-y font-medium text-xs">
                     {bills.filter(b => activePrintInvoice.bills_bundled.includes(b.id)).map(b => (
-                      <tr key={b.id} className="text-slate-700">
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-mono font-bold text-slate-500">{b.lr_number}</td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-bold text-slate-900">{b.vehicle_number}</td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-3">
+                      <tr key={b.id} className="text-slate-700 hover:bg-neutral-50">
+                        <td className="py-3 px-3 font-mono font-bold text-slate-500">{b.lr_number}</td>
+                        <td className="py-3 px-3 font-bold text-slate-900">{b.vehicle_number}</td>
+                        <td className="py-3 px-3">
                           <div>{b.route_sequence}</div>
-                          <div className="text-[9px] sm:text-[10px] text-slate-400 font-normal">To: {b.destination}</div>
+                          <div className="text-[10px] text-slate-400 font-normal">To: {b.destination}</div>
                         </td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono">₹ {Math.round(b.freight).toLocaleString("en-IN")}</td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono text-rose-600">
-                          {b.total_extra_charge > 0 ? `₹ ${b.total_extra_charge.toLocaleString("en-IN")}` : "-"}
+                        <td className="py-3 px-3 text-right font-mono">{b.weight || 0}</td>
+                        <td className="py-3 px-3 text-right font-mono">{b.rate.toLocaleString("en-IN")}</td>
+                        <td className="py-3 px-3 text-right font-mono">{b.freight > 0 ? b.freight.toLocaleString("en-IN") : "-"}</td>
+                        <td className="py-3 px-3 text-right font-mono text-amber-600">{b.diten > 0 ? b.diten.toLocaleString("en-IN") : "-"}</td>
+                        <td className="py-3 px-3 text-right font-mono text-rose-600">
+                          {b.advance > 0 ? `₹ ${b.advance.toLocaleString("en-IN")}` : "-"}
                         </td>
-                        <td className="py-2 sm:py-3 px-2 sm:px-3 text-right font-mono font-bold">
+                        <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                           ₹ {Math.round(b.total_amount).toLocaleString("en-IN")}
                         </td>
                       </tr>
