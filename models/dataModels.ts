@@ -52,7 +52,8 @@ const invoiceSchema = new Schema({
     gst_amount: Number,
     grand_total: Number,
     bills_bundled: [String],
-    status: { type: String, default: 'Generated' }
+    status: { type: String, default: 'Generated' },
+    payment_status: { type: String, default: "Pending" }
 });
 
 // 4. RESOURCE MODEL (Drivers, Trucks, Assignments)

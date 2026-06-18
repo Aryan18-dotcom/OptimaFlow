@@ -49,7 +49,8 @@ export async function POST(request: Request) {
       gst_amount: gstAmount,
       grand_total: subtotal + gstAmount,
       bills_bundled: bills_bundled,
-      status: 'Generated'
+      status: 'Generated',
+      payment_status: 'Pending'
     });
 
     // 4. Update the bundled bills to 'Invoiced' status and link them to this invoice
@@ -89,6 +90,35 @@ export async function DELETE(request: Request) {
     await Invoice.findOneAndDelete({ invoice_number: invoiceId });
 
     return NextResponse.json({ success: true, message: "Invoice deleted, bills unlocked." });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
+// ==========================================
+//  PATCH: UPDATE PAYMENT STATUS
+// ==========================================
+export async function PATCH(request: Request) {
+  try {
+    await connectToDatabase();
+    const { invoice_number, payment_status } = await request.json();
+
+    if (!invoice_number || !payment_status) {
+      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 });
+    }
+
+    // Use runValidators to ensure payment_status matches schema constraints if any
+    const updatedInvoice = await Invoice.findOneAndUpdate(
+      { invoice_number },
+      { $set: { payment_status } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedInvoice) {
+      return NextResponse.json({ success: false, message: "Invoice not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, invoice: updatedInvoice });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

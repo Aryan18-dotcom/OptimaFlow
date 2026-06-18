@@ -36,6 +36,7 @@ export default function Navbar() {
     { label: "Dashboard", path: "/", description: "Logistics control dashboard" },
     { label: "Daily Notary", path: "/notary", description: "Daily notary logs" },
     { label: "Generations", path: "/generations", description: "Logistics bill generation" },
+    { label: "Invoices", path: "/invoices", description: "Logistics invoice logs" },
     { label: "Configurations", path: "/config", description: "System configurations" },
     { label: "Settings", path: "/settings", description: "System Settings" },
   ];
@@ -80,7 +81,7 @@ export default function Navbar() {
       {/* Mobile Slide-Over */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} className="fixed inset-0 z-50 bg-white/70 backdrop-blur-2xl p-8 pt-24 md:hidden">
+          <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} className="fixed inset-0 z-50 bg-white/70 backdrop-blur-2xl p-8 pt-20 md:hidden">
             <button onClick={() => setIsOpen(false)} className="absolute top-6 right-6 p-2 text-slate-600">
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>

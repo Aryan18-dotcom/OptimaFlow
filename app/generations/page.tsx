@@ -170,7 +170,6 @@ export default function GenerationsHub() {
         advance: "",
         destination: t.route_sequence
       }));
-    console.log(compiledRows)
 
     setEditingBillId(null);
     setGridRows(compiledRows);
@@ -220,14 +219,17 @@ export default function GenerationsHub() {
         const activeAction = editingBillId ? "update" : "create";
 
         // 2. Direct Payload Mapping (No mixing or hidden calculations here)
-        console.log(row)
         const payload = {
           id: activeBillId,
           trip_id: row.trip.id,
           date: row.trip.trip_date_display,
           vehicle_number: row.trip.vehicle_number,
-          route_sequence: row.trip.route_sequence,
-          destination: row.destination || row.trip.destination,
+          route_sequence: row.destination,
+          destination: (
+            row.destination.includes("-")
+              ? row.destination.split("-")[1].trim()
+              : row.destination.split(" - ")[1]?.trim() || row.destination
+          ),
           lr_number: row.lr_number.trim(),
           party_name: batchPartyName.trim(),
           weight: row.weight,
@@ -242,7 +244,6 @@ export default function GenerationsHub() {
             ? (bills.find(b => b.id === editingBillId)?.status || "Pending Invoice")
             : "Pending Invoice"
         };
-
         // 3. Commit to API
         await fetch("/api/bills", {
           method: "POST",
@@ -286,8 +287,6 @@ export default function GenerationsHub() {
     const subtotal = matchedBills.reduce((acc, b) => acc + b.total_amount, 0);
     const gst_amount = systemSettings.billUI.showGst ? Math.round(subtotal * 0.18) : 0;
     const grand_total = subtotal + gst_amount;
-
-    console.log(selectedBillIds)
 
     const newInvoice: Invoice = {
       _id: `INV-${Date.now().toString().slice(-4)}`,
@@ -836,7 +835,12 @@ export default function GenerationsHub() {
                     {/* Mobile Card View for Bills */}
                     <div className="block lg:hidden space-y-3 max-h-125 overflow-y-auto">
                       {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).map(bill => (
-                        <div key={bill.id} className="border border-neutral-200 rounded-lg p-3 space-y-2 bg-white">
+                        <div
+                          key={bill.id}
+                          onClick={() => bill.status !== "Invoiced" && handleToggleBillSelect(bill.id)}
+                          className={`border rounded-lg p-3 space-y-2 bg-white transition-colors 
+                            ${selectedBillIds.includes(bill.id) ? "border-sky-500 bg-sky-50" : "border-neutral-200"}`}
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
                               {bill.status === "Invoiced" ? (
@@ -903,7 +907,7 @@ export default function GenerationsHub() {
                         </thead>
                         <tbody className="divide-y text-xs font-medium text-slate-700">
                           {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).map(bill => (
-                            <tr key={bill.id} className="hover:bg-neutral-50/40">
+                            <tr key={bill.id} onClick={() => bill.status !== "Invoiced" && handleToggleBillSelect(bill.id)} className="hover:bg-neutral-50/40 cursor-pointer">
                               <td className="py-3.5 px-3 sm:px-4">
                                 {bill.status === "Invoiced" ? (
                                   <input
@@ -1011,7 +1015,7 @@ export default function GenerationsHub() {
                           <button
                             type="button"
                             onClick={() => handleDeleteInvoice(inv.invoice_number)}
-                            className="text-[9px] sm:text-[11px] font-bold text-rose-600 hover:underline text-right bg-transparent border-none outline-none cursor-pointer"
+                            className="text-[10px] lg:text-[12px] font-bold text-rose-600 hover:underline text-right bg-transparent border-none outline-none cursor-pointer"
                           >
                             Erase Invoice
                           </button>

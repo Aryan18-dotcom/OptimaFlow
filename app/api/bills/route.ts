@@ -87,7 +87,8 @@ export async function POST(request: Request) {
     const shouldApplyGst = settings.value?.billUI?.showGst !== false;
 
     if (action === "create") {
-      await Bill.create(payload);
+      console.log(payload)
+      // await Bill.create(payload);
     } 
     
     else if (action === "update") {
