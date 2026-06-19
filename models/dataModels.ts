@@ -74,11 +74,23 @@ const billUISchema = new Schema({
   footerNotes: { type: String, default: "" }
 }, { _id: false });
 
+const bankDetailsSchema = new Schema({
+  bankName: { type: String, default: " " },
+  accountHolder: { type: String, default: " " },
+  accountNumber: { type: String, default: " " },
+  ifscCode: { type: String, default: " " },
+  branchName: { type: String, default: " " }
+}, { _id: false });
+
 const settingSchema = new Schema({
   companyName: { type: String, default: "Transport Roadways" },
   companyLogoText: { type: String, default: "TR" },
   logoImage: { type: String, default: null },
-  billUI: { type: billUISchema, default: () => ({}) }
+  billUI: { type: billUISchema, default: () => ({}) },
+  bank_display_details: { 
+    type: bankDetailsSchema, 
+    default: () => ({}) 
+  }
 });
 
 // Export Models

@@ -14,13 +14,21 @@ interface InvoiceDesign {
   footerNotes: string;
 }
 
+interface BankDetails {
+  bankName: string;
+  accountHolder: string;
+  accountNumber: string;
+  ifscCode: string;
+  branchName: string;
+}
+
 export default function SettingsPanel() {
   // --- Core Configuration States ---
   const [sheetLink, setSheetLink] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyLogoText, setCompanyLogoText] = useState("");
   const [logoImage, setLogoImage] = useState<string | null>(null);
-  
+
   const [billUI, setBillUI] = useState<InvoiceDesign>({
     themeColor: "#0284c7",
     fontStyle: "sans",
@@ -31,11 +39,19 @@ export default function SettingsPanel() {
     footerNotes: ""
   });
 
+  const [bank_display_details, setBankDetails] = useState<BankDetails>({
+    bankName: "",
+    accountHolder: "",
+    accountNumber: "",
+    ifscCode: "",
+    branchName: ""
+  });
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSavedGlow, setIsSavedGlow] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [customColorInput, setCustomColorInput] = useState("#0284c7");
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const presets = ["#0284c7", "#0f172a", "#10b981", "#7c3aed", "#e11d48"];
 
@@ -52,6 +68,7 @@ export default function SettingsPanel() {
           setCompanyLogoText(cfg.companyLogoText || "");
           setLogoImage(cfg.logoImage || null);
           if (cfg.billUI) setBillUI(cfg.billUI);
+          if (cfg.bank_display_details) setBankDetails(cfg.bank_display_details);
         }
       } catch (err) {
         console.error("Failed loading preferences file:", err);
@@ -88,7 +105,8 @@ export default function SettingsPanel() {
       companyName,
       companyLogoText,
       logoImage,
-      billUI
+      billUI,
+      bank_display_details
     };
 
     try {
@@ -123,7 +141,7 @@ export default function SettingsPanel() {
   return (
     <main className="w-full min-h-screen bg-neutral-100 text-slate-900 antialiased p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        
+
         {/* --- SETTINGS HEADER - Responsive --- */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-white p-4 sm:p-6 rounded-xl border border-neutral-200 shadow-sm">
           <div>
@@ -141,36 +159,49 @@ export default function SettingsPanel() {
 
         {/* --- GRID ENVIRONMENT WORKSPACE - Responsive --- */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          
+
           {/* LEFT INTERACTIVE CONTROL DECK */}
           <div className="lg:w-5/12 space-y-6">
-            
-            {/* Sheet Link */}
+
+            {/* Banking Details */}
             <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-5 space-y-4">
-              <h2 className="font-bold text-base text-slate-800 border-b border-neutral-100 pb-2">📦 Sheet Data Integrations</h2>
-              <div>
-                <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Connected Google-Sheets URL</label>
-                <input 
-                  type="text"
-                  value={sheetLink}
-                  onChange={(e) => setSheetLink(e.target.value)}
-                  placeholder="https://docs.google.com/spreadsheets/d/..."
-                  className="w-full mt-1.5 bg-neutral-50 border border-neutral-200 text-xs p-2.5 sm:p-3 rounded-lg font-mono focus:outline-none focus:border-sky-500 text-slate-700"
-                />
+              <h2 className="font-bold border-b pb-2">🏦 Banking & Settlement</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Bank Name</label>
+                  <input placeholder="e.g. HDFC Bank" value={bank_display_details.bankName} onChange={e => setBankDetails({ ...bank_display_details, bankName: e.target.value })} className="w-full mt-1.5 bg-neutral-50 border border-neutral-200 text-xs p-2.5 sm:p-3 rounded-lg font-medium focus:outline-none focus:border-sky-500" />
+                </div>
+                <div>
+                  <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Account Holder</label>
+                  <input placeholder="Account Holder Name" value={bank_display_details.accountHolder} onChange={e => setBankDetails({ ...bank_display_details, accountHolder: e.target.value })} className="w-full mt-1.5 bg-neutral-50 border border-neutral-200 text-xs p-2.5 sm:p-3 rounded-lg font-medium focus:outline-none focus:border-sky-500" />
+                </div>
+
+                <div>
+                  <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Account Number</label>
+                  <input placeholder="0000000000" value={bank_display_details.accountNumber} onChange={e => setBankDetails({ ...bank_display_details, accountNumber: e.target.value })} className="col-span-2 w-full mt-1.5 bg-neutral-50 border border-neutral-200 text-xs p-2.5 sm:p-3 rounded-lg font-medium focus:outline-none focus:border-sky-500" />
+                </div>
+                <div>
+                  <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">IFSC Code</label>
+                  <input placeholder="IFSC0000000" value={bank_display_details.ifscCode} onChange={e => setBankDetails({ ...bank_display_details, ifscCode: e.target.value })} className="col-span-2 w-full mt-1.5 bg-neutral-50 border border-neutral-200 text-xs p-2.5 sm:p-3 rounded-lg font-medium focus:outline-none focus:border-sky-500" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Bank's Branch</label>
+                  <input placeholder="Ashram Road, Ahmedabad" value={bank_display_details.branchName} onChange={e => setBankDetails({ ...bank_display_details, branchName: e.target.value })} className="col-span-2 w-full mt-1.5 bg-neutral-50 border border-neutral-200 text-xs p-2.5 sm:p-3 rounded-lg font-medium focus:outline-none focus:border-sky-500" />
+                </div>
               </div>
             </div>
 
             {/* Business Identity */}
             <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-5 space-y-4">
               <h2 className="font-bold text-base text-slate-800 border-b border-neutral-100 pb-2">🏢 Business Identity Details</h2>
-              
+
               <div className="space-y-2">
                 <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Corporate Graphic Logo</label>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-3 bg-neutral-50 rounded-xl border border-neutral-200">
                   {logoImage ? (
                     <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-lg overflow-hidden bg-white border border-neutral-200 flex items-center justify-center">
                       <img src={logoImage} alt="Preview" className="h-full w-full object-contain" />
-                      <button 
+                      <button
                         type="button"
                         onClick={handleRemoveLogo}
                         className="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] sm:text-[10px] font-bold cursor-pointer"
@@ -184,15 +215,15 @@ export default function SettingsPanel() {
                     </div>
                   )}
                   <div className="flex-1 w-full">
-                    <input 
-                      type="file" 
-                      accept="image/*" 
+                    <input
+                      type="file"
+                      accept="image/*"
                       ref={fileInputRef}
                       onChange={handleLogoChange}
-                      className="hidden" 
+                      className="hidden"
                       id="invoice-logo-upload"
                     />
-                    <label 
+                    <label
                       htmlFor="invoice-logo-upload"
                       className="inline-block text-[10px] sm:text-xs font-bold text-slate-700 bg-white border border-neutral-200 shadow-xs px-3 py-2 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors"
                     >
@@ -206,7 +237,7 @@ export default function SettingsPanel() {
               <div className="flex flex-col sm:grid sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Registered Company Name</label>
-                  <input 
+                  <input
                     type="text"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
@@ -215,7 +246,7 @@ export default function SettingsPanel() {
                 </div>
                 <div>
                   <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Fallback Initials</label>
-                  <input 
+                  <input
                     type="text"
                     maxLength={3}
                     value={companyLogoText}
@@ -226,7 +257,7 @@ export default function SettingsPanel() {
               </div>
               <div>
                 <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Corporate Address Layout</label>
-                <textarea 
+                <textarea
                   rows={2}
                   value={billUI.companyAddress}
                   onChange={(e) => setBillUI({ ...billUI, companyAddress: e.target.value })}
@@ -238,7 +269,7 @@ export default function SettingsPanel() {
             {/* Theme Designer */}
             <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 sm:p-5 space-y-4">
               <h2 className="font-bold text-base text-slate-800 border-b border-neutral-100 pb-2">🎨 Invoice Theme Designer Controls</h2>
-              
+
               <div>
                 <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Invoice Primary Theme Tint</label>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -251,7 +282,7 @@ export default function SettingsPanel() {
                       className={`h-6 w-6 sm:h-7 sm:w-7 rounded-full border-2 cursor-pointer transition-transform ${billUI.themeColor === color ? "border-slate-900 scale-110 shadow-sm" : "border-transparent"}`}
                     />
                   ))}
-                  
+
                   <div className="relative">
                     <button
                       type="button"
@@ -274,14 +305,14 @@ export default function SettingsPanel() {
                         >
                           <div className="text-[10px] sm:text-xs font-bold text-slate-700">Color Spectrum Playground</div>
                           <div className="flex gap-2 items-center">
-                            <input 
-                              type="color" 
+                            <input
+                              type="color"
                               value={customColorInput}
                               onChange={(e) => setCustomColorInput(e.target.value)}
                               className="h-8 w-10 sm:h-9 sm:w-12 border border-neutral-200 rounded-lg cursor-pointer p-0 bg-transparent"
                             />
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={customColorInput}
                               onChange={(e) => setCustomColorInput(e.target.value)}
                               className="flex-1 bg-neutral-50 border border-neutral-200 font-mono text-[10px] sm:text-xs p-1.5 sm:p-2 rounded-lg focus:outline-none"
@@ -317,18 +348,18 @@ export default function SettingsPanel() {
               <div className="space-y-3 pt-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] sm:text-xs font-semibold text-slate-700">Include Automated GST Columns (18%)</span>
-                  <input 
-                    type="checkbox" 
-                    checked={billUI.showGst} 
+                  <input
+                    type="checkbox"
+                    checked={billUI.showGst}
                     onChange={(e) => setBillUI({ ...billUI, showGst: e.target.checked })}
                     className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-sky-600 border-neutral-300 rounded focus:ring-sky-500 cursor-pointer"
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] sm:text-xs font-semibold text-slate-700">Display Consignee Signature Deck</span>
-                  <input 
-                    type="checkbox" 
-                    checked={billUI.showSignature} 
+                  <input
+                    type="checkbox"
+                    checked={billUI.showSignature}
                     onChange={(e) => setBillUI({ ...billUI, showSignature: e.target.checked })}
                     className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-sky-600 border-neutral-300 rounded focus:ring-sky-500 cursor-pointer"
                   />
@@ -337,7 +368,7 @@ export default function SettingsPanel() {
 
               <div>
                 <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-400">Terms & Conditions Contract Strings</label>
-                <textarea 
+                <textarea
                   rows={2}
                   value={billUI.termsText}
                   onChange={(e) => setBillUI({ ...billUI, termsText: e.target.value })}
@@ -349,14 +380,14 @@ export default function SettingsPanel() {
           </div>
 
           {/* RIGHT LIVE INVOICE PREVIEW CANVAS - Responsive */}
-          <div className="lg:w-7/12 lg:sticky lg:top-8">
+          <div className="lg:w-7/12 lg:sticky lg:top-18">
             <div className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400 mb-2 px-1">🖥️ Interactive Print Canvas Preview</div>
-            
-            <div 
+
+            <div
               style={{
-                fontFamily: 
-                  billUI.fontStyle === "serif" ? "Georgia, serif" : 
-                  billUI.fontStyle === "mono" ? "Courier New, monospace" : "inherit"
+                fontFamily:
+                  billUI.fontStyle === "serif" ? "Georgia, serif" :
+                    billUI.fontStyle === "mono" ? "Courier New, monospace" : "inherit"
               }}
               className="bg-white rounded-xl border border-neutral-200 shadow-xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6 text-xs text-slate-800 transition-all duration-200"
             >
@@ -368,7 +399,7 @@ export default function SettingsPanel() {
                       <img src={logoImage} alt="Brand Logo" className="h-full w-full object-contain" />
                     </div>
                   ) : companyLogoText ? (
-                    <div 
+                    <div
                       style={{ backgroundColor: billUI.themeColor }}
                       className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl text-white font-black text-xs sm:text-sm flex items-center justify-center shadow-inner transition-colors duration-200"
                     >
@@ -410,7 +441,7 @@ export default function SettingsPanel() {
                       <th className="py-2 px-2 sm:px-3 text-center w-14 sm:w-16">Qty</th>
                       <th className="py-2 px-2 sm:px-3 text-right w-20 sm:w-24">Freight Rate</th>
                       <th className="py-2 px-2 sm:px-3 text-right w-20 sm:w-24">Line Net</th>
-                     </tr>
+                    </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 font-medium">
                     <tr>
@@ -441,19 +472,26 @@ export default function SettingsPanel() {
                 </div>
               </div>
 
-              {/* Footer Section */}
-              <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 text-[8px] sm:text-[9px] pt-4 border-t border-neutral-100">
+              {/* Footer Section including Bank Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[8px] sm:text-[9px] pt-4 border-t border-neutral-100">
+                {/* Left: Banking Details */}
                 <div className="space-y-1">
-                  <span className="text-slate-400 font-bold uppercase block tracking-wide">Contract Declarations:</span>
-                  <p className="text-slate-400 whitespace-pre-line leading-relaxed">{billUI.termsText || "No explicit terms specified."}</p>
+                  <span className="text-slate-400 font-bold uppercase block tracking-wide">Bank Details:</span>
+                  <p className="font-bold text-slate-700">{bank_display_details.bankName}</p>
+                  <p className="text-slate-500 font-mono">A/c: {bank_display_details.accountNumber} | IFSC: {bank_display_details.ifscCode}</p>
+                  <p className="font-bold text-slate-500">{bank_display_details.branchName}</p>
                 </div>
-                
-                {billUI.showSignature && (
-                  <div className="flex flex-col justify-end items-start sm:items-end h-full pt-4 sm:pt-6 sm:pr-2">
-                    <div className="w-24 sm:w-32 border-b border-slate-400 text-center text-slate-300 italic font-serif text-[9px] sm:text-[10px]">Authorized Stamp</div>
-                    <div className="text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase mt-1 tracking-wide">Signatory Seal</div>
-                  </div>
-                )}
+
+                {/* Right: Signature & Terms */}
+                <div className="flex flex-col justify-end items-start sm:items-end">
+                  <span className="text-slate-400 font-bold uppercase block tracking-wide">Authorized Signatory:</span>
+                  <div className="w-24 sm:w-32 border-b border-slate-400 mt-4 text-center italic text-slate-300">Seal</div>
+                </div>
+              </div>
+
+              {/* Terms at the very bottom */}
+              <div className="mt-4 text-[8px] text-slate-400 italic text-center">
+                {billUI.termsText}
               </div>
 
             </div>

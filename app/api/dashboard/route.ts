@@ -79,17 +79,33 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const payload = await request.json();
     let processedPayload = { ...payload };
+    console.log(payload)
 
     // Use the helper if it's a new upload
     if (payload.logoImage?.startsWith("data:image/")) {
       processedPayload.logoImage = await uploadToCloudinary(payload.logoImage, "company_logos");
     }
 
+    // Change your update logic to this:
     const updatedSettings = await Setting.findOneAndUpdate(
-      {}, 
-      { $set: processedPayload }, 
-      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+      {},
+      {
+        $set: {
+          sheetLink: processedPayload.sheetLink,
+          companyName: processedPayload.companyName,
+          companyLogoText: processedPayload.companyLogoText,
+          logoImage: processedPayload.logoImage,
+          billUI: processedPayload.billUI,
+          bank_display_details: processedPayload.bank_display_details // Explicitly map this
+        }
+      },
+      {
+        upsert: true,
+        new: true,
+        runValidators: true
+      }
     );
+    console.log(updatedSettings)
 
     return NextResponse.json({
       success: true,

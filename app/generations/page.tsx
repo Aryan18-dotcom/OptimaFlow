@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import DownloadToPDF from "../components/DownloadToPDF";
 
 interface UnbilledTrip {
   id: string;
@@ -59,6 +60,13 @@ interface SystemSettings {
     companyAddress: string;
     footerNotes: string;
   };
+  bank_display_details: {
+    bankName: string;
+    accountHolder: string;
+    accountNumber: string;
+    ifscCode: string;
+    branchName: string;
+  }
 }
 
 interface GridRowInput {
@@ -94,6 +102,13 @@ export default function GenerationsHub() {
       termsText: "1. All disputes are subject to local jurisdiction laws.\n2. Payments must accompany standard freight receipt signatures.",
       companyAddress: "Corporate Fleet Office, Sarkhej-Gandhinagar Highway, Ahmedabad, Gujarat",
       footerNotes: "Thank you for trusting us with your supply chain cargo!"
+    },
+    bank_display_details: {
+      bankName: "Dummy Bank",
+      accountHolder: "Dummy Holder",
+      accountNumber: "000000000",
+      ifscCode: "IFC00000000",
+      branchName: "Area of bank"
     }
   });
 
@@ -1040,15 +1055,24 @@ export default function GenerationsHub() {
       {/* --- PRINT PREVIEW ENGINE HOOKS - Responsive Print Modal --- */}
       {
         activePrintInvoice && (
-          <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto flex justify-center p-3 sm:p-0 md:p-6 backdrop-blur-xs print:fixed print:inset-0 print:bg-white print:p-0 print:z-max print:overflow-hidden">
+          <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto flex justify-center p-3 sm:p-0 md:p-6 backdrop-blur-xs print:fixed print:inset-0 print:bg-white print:p-0 print:z-9999 print:overflow-visible">
             <div
               style={{
                 fontFamily:
                   systemSettings.billUI.fontStyle === "serif" ? "Georgia, serif" :
                     systemSettings.billUI.fontStyle === "mono" ? "Courier New, monospace" : "inherit"
               }}
-              className="bg-white w-full max-w-4xl h-max p-4 sm:p-6 md:p-8 rounded-none sm:rounded-xl shadow-2xl space-y-4 sm:space-y-6 text-xs text-slate-800 border print:shadow-none print:border-none print:w-full print:h-full print:p-4"
+              className="bg-white w-full max-w-4xl h-max p-4 sm:p-6 md:p-8 rounded-none sm:rounded-xl shadow-2xl space-y-6 text-xs text-slate-800 border print:shadow-none print:border-none print:w-full print:h-auto print:p-4 print:overflow-visible"
             >
+              {/* <div className="flex gap-2 mb-4">
+                <DownloadToPDF
+                  elementId="invoice-print-canvas"
+                  fileName={`Invoice_${activePrintInvoice.invoice_number}.pdf`}
+                  buttonText="Download PDF Directly"
+                  className="bg-sky-600 text-white font-bold px-4 py-2 rounded-lg cursor-pointer"
+                />
+                <button onClick={() => setActivePrintInvoice(null)} className="...">Close</button>
+              </div> */}
 
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b pb-4 print:hidden">
                 <div className="font-bold text-sm text-slate-700">Tax Invoice Print Engine Canvas</div>
@@ -1058,7 +1082,7 @@ export default function GenerationsHub() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-neutral-200 pb-4 sm:pb-5">
+              <div id="invoice-print-canvas" className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-neutral-200 pb-4 sm:pb-5">
                 <div className="flex items-center gap-3">
                   {systemSettings.logoImage ? (
                     <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-white border border-neutral-200 overflow-hidden flex items-center justify-center p-0.5 shadow-xs">
@@ -1151,6 +1175,30 @@ export default function GenerationsHub() {
                 <div style={{ color: systemSettings.billUI.themeColor }} className="flex justify-between font-black text-sm sm:text-base pt-2 border-t border-dashed">
                   <span>Grand Account Total:</span>
                   <span className="font-mono">₹ {Math.round(activePrintInvoice.grand_total).toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-neutral-200">
+                <div className="bg-neutral-50 rounded-xl p-4 sm:p-5 border border-neutral-100 flex flex-col sm:flex-row gap-6">
+
+                  {/* Left: Banking Details */}
+                  <div className="flex-1 space-y-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Payment Settlement Details</span>
+                    <p className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">{systemSettings.bank_display_details.bankName || "Bank Name"}</p>
+                    <p className="text-[10px] text-slate-500 font-medium">Account Holder: {systemSettings.bank_display_details.accountHolder || "-"}</p>
+                  </div>
+
+                  {/* Right: Account & IFSC Grid */}
+                  <div className="flex flex-col sm:items-end justify-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">A/c No:</span>
+                      <span className="font-mono font-bold text-slate-900">{systemSettings.bank_display_details.accountNumber || "0000 0000 0000"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">IFSC:</span>
+                      <span className="font-mono font-bold text-slate-900">{systemSettings.bank_display_details.ifscCode || "IFSC0000000"}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
