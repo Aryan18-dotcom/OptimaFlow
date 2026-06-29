@@ -125,6 +125,7 @@ export default function GenerationsHub() {
 
   // Selection Invoicing Parameters
   const [selectedParty, setSelectedParty] = useState("");
+  const [selectedInvoiceParty, setSelectedInvoiceParty] = useState(""); // Dedicated Archive Filter Dropdown state
   const [selectedBillIds, setSelectedBillIds] = useState<string[]>([]);
   const [activePrintInvoice, setActivePrintInvoice] = useState<Invoice | null>(null);
 
@@ -196,7 +197,6 @@ export default function GenerationsHub() {
     const updated = [...gridRows];
     const currentRow = { ...updated[index], ...fields };
 
-    // Auto-calculate Freight if Weight or Rate changed
     if (fields.weight !== undefined || fields.rate !== undefined) {
       const weight = parseFloat(currentRow.weight) || 0;
       const rate = parseFloat(currentRow.rate) || 0;
@@ -220,7 +220,6 @@ export default function GenerationsHub() {
   };
 
   const handleSaveBatchLedgerGrid = async () => {
-    // 1. Validation
     if (gridRows.some(r => !r.lr_number.trim())) {
       showToast("LR Slip Number inputs are mandatory for every checked row in the spreadsheet.", "warning");
       return;
@@ -229,11 +228,9 @@ export default function GenerationsHub() {
     setIsLoading(true);
     try {
       for (const row of gridRows) {
-        // Prepare the raw data points
         const activeBillId = editingBillId || `BILL-LR-${Math.floor(1000 + Math.random() * 9000)}`;
         const activeAction = editingBillId ? "update" : "create";
 
-        // 2. Direct Payload Mapping (No mixing or hidden calculations here)
         const payload = {
           id: activeBillId,
           trip_id: row.trip.id,
@@ -254,12 +251,10 @@ export default function GenerationsHub() {
           advance: parseFloat(row.advance) || 0,
           total_extra_charge: Math.round(parseFloat(row.freight) || 0 + parseFloat(row.diten) || 0 + parseFloat(row.diten) || 0),
           total_amount: calculateRowBalance(row),
-
           status: editingBillId
             ? (bills.find(b => b.id === editingBillId)?.status || "Pending Invoice")
             : "Pending Invoice"
         };
-        // 3. Commit to API
         await fetch("/api/bills", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -267,7 +262,6 @@ export default function GenerationsHub() {
         });
       }
 
-      // 4. Cleanup and Reset
       showToast(editingBillId ? "Ledger entries updated successfully." : "Batch logs successfully saved.", "success");
       setBatchPartyName("");
       setSelectedTripIds([]);
@@ -342,7 +336,7 @@ export default function GenerationsHub() {
       vehicle_number: bill.vehicle_number,
       route_sequence: bill.route_sequence,
       destination: bill.destination,
-      driver_name: "" // Note: Ensure your data source provides this if needed
+      driver_name: "" 
     };
 
     setGridRows([{
@@ -389,21 +383,22 @@ export default function GenerationsHub() {
   };
 
   const unbilledParties = Array.from(new Set(bills.filter(b => b.status === "Pending Invoice").map(b => b.party_name)));
+  
+  // Extract all distinct corporate clients available across historical invoice structures
+  const invoicedParties = Array.from(new Set(invoices.map(inv => inv.client_name)));
+
   const filteredUnbilledQueue = unbilledTrips.filter(t => {
-    // Normalize inputs
     const truckQuery = searchTruck.toLowerCase();
     const dateQuery = searchTruckByDate;
 
-    const matchesTruck = searchTruck
-      ? t.vehicle_number.toLowerCase().includes(truckQuery)
-      : true;
-
-    const matchesDate = searchTruckByDate
-      ? t.trip_date_display === dateQuery
-      : true;
+    const matchesTruck = searchTruck ? t.vehicle_number.toLowerCase().includes(truckQuery) : true;
+    const matchesDate = searchTruckByDate ? t.trip_date_display === dateQuery : true;
 
     return matchesTruck && matchesDate;
   });
+
+  // Filtered array subset for Tab 3 archive canvas mappings
+  const filteredInvoicesList = invoices.filter(inv => selectedInvoiceParty ? inv.client_name === selectedInvoiceParty : true);
 
   function activeTab(tab: "trips" | "bills" | "invoices") { setActiveTab(tab); }
 
@@ -445,7 +440,6 @@ export default function GenerationsHub() {
               <motion.div key="trips-tab" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 sm:space-y-6">
 
                 {!isGridMode ? (
-                  /* STEP 1: PARTY SETUP AND CHECKBOX SELECTION - Responsive */
                   <div className="space-y-4 sm:space-y-6">
                     <div className="border-b border-neutral-100 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
                       <div>
@@ -460,11 +454,7 @@ export default function GenerationsHub() {
                           placeholder="e.g., Adani Logistics Group"
                           value={batchPartyName}
                           onChange={e => setBatchPartyName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleProceedToGrid();
-                            }
-                          }}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleProceedToGrid(); }}
                           className="bg-white border text-xs font-bold p-2 rounded-lg outline-none focus:border-sky-500 w-full sm:w-64 text-slate-800"
                         />
                       </div>
@@ -473,7 +463,6 @@ export default function GenerationsHub() {
                     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
                       <div className="lg:flex-2 space-y-3 sm:space-y-4">
                         <div className="flex flex-col sm:flex-row gap-3">
-                          {/* Truck Search Input */}
                           <input
                             type="text"
                             placeholder="🔍 Plate number (e.g., 5399)..."
@@ -481,8 +470,6 @@ export default function GenerationsHub() {
                             onChange={(e) => setSearchTruck(e.target.value)}
                             className="flex-1 bg-neutral-50 border border-neutral-200 text-xs sm:text-sm p-2.5 sm:p-3 rounded-lg outline-none focus:border-sky-500"
                           />
-
-                          {/* Date Search Input */}
                           <input
                             type="date"
                             value={searchTruckByDate}
@@ -491,7 +478,7 @@ export default function GenerationsHub() {
                           />
                         </div>
 
-                        {/* Mobile Card View for Trips - Visible on mobile */}
+                        {/* Mobile Card View for Trips */}
                         <div className="block md:hidden space-y-3 max-h-100 overflow-y-auto">
                           {filteredUnbilledQueue.map(trip => (
                             <div
@@ -514,9 +501,7 @@ export default function GenerationsHub() {
                               <div className="text-[10px] text-slate-400 mt-1">Driver: {trip.driver_name}</div>
                             </div>
                           ))}
-                          {filteredUnbilledQueue.length === 0 && (
-                            <div className="text-center text-slate-400 text-xs py-8">No trips found</div>
-                          )}
+                          {filteredUnbilledQueue.length === 0 && <div className="text-center text-slate-400 text-xs py-8">No trips found</div>}
                         </div>
 
                         {/* Desktop Table View */}
@@ -576,16 +561,14 @@ export default function GenerationsHub() {
                     </div>
                   </div>
                 ) : (
-                  /* STEP 2: EDTIABLE MULTI-TRIP SPREADSHEET LEDGER GRID - Responsive */
-                  < div className="space-y-4 sm:space-y-6">
+                  /* STEP 2: EDTIABLE MULTI-TRIP SPREADSHEET LEDGER GRID */
+                  <div className="space-y-4 sm:space-y-6">
                     <div className="border-b border-neutral-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-neutral-50/60 p-3 sm:p-4 rounded-xl border gap-3">
                       <div className="w-full sm:w-auto">
                         <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide text-slate-400">
                           {editingBillId ? "Modifying Registered Bill Row" : "Freight Allocation Ledger"}
                         </span>
-                        <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 mt-0.5 ">
-                          {batchPartyName}
-                        </h2>
+                        <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 mt-0.5">{batchPartyName}</h2>
                       </div>
                       <button
                         type="button"
@@ -602,7 +585,6 @@ export default function GenerationsHub() {
                         const balance = calculateRowBalance(row);
                         return (
                           <div key={row.trip.id} className="bg-white border border-neutral-200 rounded-xl p-4 shadow-sm space-y-3">
-                            {/* Header with LR Number */}
                             <div className="border-b border-neutral-100 pb-2">
                               <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">LR Number <span className="text-rose-500">*</span></label>
                               <input
@@ -615,23 +597,17 @@ export default function GenerationsHub() {
                               />
                             </div>
 
-                            {/* Date and Vehicle */}
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Date</label>
-                                <div className="text-slate-400 font-medium text-sm bg-neutral-50 p-2 rounded-lg border border-neutral-200">
-                                  {row.trip.trip_date_display}
-                                </div>
+                                <div className="text-slate-400 font-medium text-sm bg-neutral-50 p-2 rounded-lg border border-neutral-200">{row.trip.trip_date_display}</div>
                               </div>
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Truck Number</label>
-                                <div className="font-mono font-bold text-slate-900 text-sm bg-neutral-50 p-2 rounded-lg border border-neutral-200">
-                                  {row.trip.vehicle_number}
-                                </div>
+                                <div className="font-mono font-bold text-slate-900 text-sm bg-neutral-50 p-2 rounded-lg border border-neutral-200">{row.trip.vehicle_number}</div>
                               </div>
                             </div>
 
-                            {/* Destination */}
                             <div>
                               <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Destination</label>
                               <input
@@ -643,7 +619,6 @@ export default function GenerationsHub() {
                               />
                             </div>
 
-                            {/* Financial Fields Grid */}
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Weight (MT)</label>
@@ -668,12 +643,7 @@ export default function GenerationsHub() {
                               </div>
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Freight (₹)</label>
-                                <input
-                                  type="number"
-                                  value={row.freight}
-                                  readOnly // Make this read-only since it's now auto-calculated
-                                  className="w-full border p-2 rounded-lg outline-none text-slate-500 font-mono text-right text-xs bg-neutral-100"
-                                />
+                                <input type="number" value={row.freight} readOnly className="w-full border p-2 rounded-lg outline-none text-slate-500 font-mono text-right text-xs bg-neutral-100" />
                               </div>
                               <div>
                                 <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Diten (₹)</label>
@@ -771,12 +741,7 @@ export default function GenerationsHub() {
                                     />
                                   </td>
                                   <td className="py-2 lg:py-2.5 px-2 lg:px-3">
-                                    <input
-                                      type="number"
-                                      value={row.freight}
-                                      readOnly // Make this read-only since it's now auto-calculated
-                                      className="w-full border p-2 rounded-lg outline-none text-slate-500 font-mono text-right text-xs bg-neutral-100"
-                                    />
+                                    <input type="number" value={row.freight} readOnly className="w-full border p-2 rounded-lg outline-none text-slate-500 font-mono text-right text-xs bg-neutral-100" />
                                   </td>
                                   <td className="py-2 lg:py-2.5 px-2 lg:px-3">
                                     <input
@@ -807,15 +772,11 @@ export default function GenerationsHub() {
                       </div>
                     </div>
 
-                    {/* Footer Summary - Responsive */}
                     <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-5 bg-neutral-900 text-white rounded-xl shadow-lg border border-neutral-800">
                       <div className="w-full sm:w-auto">
                         <span className="text-[9px] sm:text-[10px] font-bold text-neutral-400 block uppercase tracking-wider">Group Balance Allocation Sum</span>
-                        <div className="text-xl sm:text-2xl font-black text-white font-mono mt-0.5 ">
-                          ₹ {Math.round(getGridGrandTotal()).toLocaleString("en-IN")}
-                        </div>
+                        <div className="text-xl sm:text-2xl font-black text-white font-mono mt-0.5">₹ {Math.round(getGridGrandTotal()).toLocaleString("en-IN")}</div>
                       </div>
-
                       <button
                         type="button"
                         onClick={handleSaveBatchLedgerGrid}
@@ -829,7 +790,7 @@ export default function GenerationsHub() {
               </motion.div>
             )}
 
-            {/* TAB 2: COMPILED PENDING BILLS MANIFESTS - Responsive */}
+            {/* TAB 2: COMPILED PENDING BILLS MANIFESTS */}
             {activeTabState === "bills" && (
               <motion.div key="bills-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 sm:space-y-6">
                 <div className="border-b border-neutral-100 pb-3">
@@ -853,34 +814,18 @@ export default function GenerationsHub() {
                         <div
                           key={bill.id}
                           onClick={() => bill.status !== "Invoiced" && handleToggleBillSelect(bill.id)}
-                          className={`border rounded-lg p-3 space-y-2 bg-white transition-colors 
-                            ${selectedBillIds.includes(bill.id) ? "border-sky-500 bg-sky-50" : "border-neutral-200"}`}
+                          className={`border rounded-lg p-3 space-y-2 bg-white transition-colors ${selectedBillIds.includes(bill.id) ? "border-sky-500 bg-sky-50" : "border-neutral-200"}`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex items-center gap-2">
                               {bill.status === "Invoiced" ? (
-                                // SHOW: Ticked Checkbox (read-only)
-                                <input
-                                  type="checkbox"
-                                  checked={true}
-                                  disabled={true}
-                                  className="h-4 w-4 text-emerald-600 rounded cursor-not-allowed opacity-100"
-                                />
+                                <input type="checkbox" checked={true} disabled={true} className="h-4 w-4 text-emerald-600 rounded cursor-not-allowed opacity-100" />
                               ) : (
-                                // SHOW: Selectable Checkbox
-                                <input
-                                  type="checkbox"
-                                  checked={selectedBillIds.includes(bill.id)}
-                                  disabled={false}
-                                  onChange={() => handleToggleBillSelect(bill.id)}
-                                  className="h-4 w-4 text-sky-600 rounded cursor-pointer"
-                                />
+                                <input type="checkbox" checked={selectedBillIds.includes(bill.id)} onChange={() => handleToggleBillSelect(bill.id)} className="h-4 w-4 text-sky-600 rounded cursor-pointer" />
                               )}
                               <span className="font-mono font-bold text-slate-500 text-xs">{bill.lr_number}</span>
                             </div>
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${bill.status === "Pending Invoice" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
-                              {bill.status}
-                            </span>
+                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${bill.status === "Pending Invoice" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{bill.status}</span>
                           </div>
                           <div>
                             <div className="font-bold text-slate-900 text-sm">{bill.vehicle_number}</div>
@@ -892,19 +837,13 @@ export default function GenerationsHub() {
                               {bill.total_amount === 0 ? <span className="text-rose-600 italic">₹ 0 (Open Rate)</span> : `₹ ${bill.total_amount.toLocaleString("en-IN")}`}
                             </span>
                             <div className="space-x-2">
-                              <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleTriggerEdit(bill)} className="text-[10px] text-sky-600 disabled:opacity-30 font-bold hover:underline">
-                                Modify
-                              </button>
-                              <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleDeleteBill(bill.id)} className="text-[10px] text-rose-600 disabled:opacity-30 font-bold hover:underline">
-                                Erase
-                              </button>
+                              <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleTriggerEdit(bill)} className="text-[10px] text-sky-600 disabled:opacity-30 font-bold hover:underline">Modify</button>
+                              <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleDeleteBill(bill.id)} className="text-[10px] text-rose-600 disabled:opacity-30 font-bold hover:underline">Erase</button>
                             </div>
                           </div>
                         </div>
                       ))}
-                      {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).length === 0 && (
-                        <div className="text-center text-slate-400 text-xs py-8">No bills found</div>
-                      )}
+                      {bills.filter(b => selectedParty ? b.party_name === selectedParty : true).length === 0 && <div className="text-center text-slate-400 text-xs py-8">No bills found</div>}
                     </div>
 
                     {/* Desktop Table View */}
@@ -925,20 +864,9 @@ export default function GenerationsHub() {
                             <tr key={bill.id} onClick={() => bill.status !== "Invoiced" && handleToggleBillSelect(bill.id)} className="hover:bg-neutral-50/40 cursor-pointer">
                               <td className="py-3.5 px-3 sm:px-4">
                                 {bill.status === "Invoiced" ? (
-                                  <input
-                                    type="checkbox"
-                                    checked={true}
-                                    disabled={true}
-                                    className="h-4 w-4 text-emerald-600 rounded cursor-not-allowed opacity-100"
-                                  />
+                                  <input type="checkbox" checked={true} disabled={true} className="h-4 w-4 text-emerald-600 rounded cursor-not-allowed opacity-100" />
                                 ) : (
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedBillIds.includes(bill.id)}
-                                    disabled={false}
-                                    onChange={() => handleToggleBillSelect(bill.id)}
-                                    className="h-4 w-4 text-sky-600 rounded cursor-pointer"
-                                  />
+                                  <input type="checkbox" checked={selectedBillIds.includes(bill.id)} onChange={() => handleToggleBillSelect(bill.id)} className="h-4 w-4 text-sky-600 rounded cursor-pointer" />
                                 )}
                               </td>
                               <td className="py-3.5 px-3 sm:px-4 font-mono font-bold text-slate-500 text-xs whitespace-nowrap">{bill.lr_number}</td>
@@ -950,17 +878,11 @@ export default function GenerationsHub() {
                                 {bill.total_amount === 0 ? <span className="text-rose-600 font-semibold italic">₹ 0 (Open Rate)</span> : `₹ ${bill.total_amount.toLocaleString("en-IN")}`}
                               </td>
                               <td className="py-3.5 px-3 sm:px-4">
-                                <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded ${bill.status === "Pending Invoice" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800"}`}>
-                                  {bill.status}
-                                </span>
+                                <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded ${bill.status === "Pending Invoice" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800"}`}>{bill.status}</span>
                               </td>
                               <td className="py-3.5 px-3 sm:px-4 text-right space-x-2 whitespace-nowrap">
-                                <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleTriggerEdit(bill)} className="text-[10px] sm:text-xs text-sky-600 disabled:opacity-30 font-bold hover:underline cursor-pointer">
-                                  Modify
-                                </button>
-                                <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleDeleteBill(bill.id)} className="text-[10px] sm:text-xs text-rose-600 disabled:opacity-30 font-bold hover:underline cursor-pointer">
-                                  Erase
-                                </button>
+                                <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleTriggerEdit(bill)} className="text-[10px] sm:text-xs text-sky-600 disabled:opacity-30 font-bold hover:underline cursor-pointer">Modify</button>
+                                <button type="button" disabled={bill.status === "Invoiced"} onClick={() => handleDeleteBill(bill.id)} className="text-[10px] sm:text-xs text-rose-600 disabled:opacity-30 font-bold hover:underline cursor-pointer">Erase</button>
                               </td>
                             </tr>
                           ))}
@@ -969,14 +891,13 @@ export default function GenerationsHub() {
                     </div>
                   </div>
 
-                  {/* Invoice Compilation Deck Panel - Responsive */}
                   <div className="lg:flex-1 bg-neutral-50/80 border border-neutral-200 p-4 sm:p-5 rounded-xl h-max space-y-4">
                     <h4 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Invoice Batching Deck</h4>
                     {selectedBillIds.length > 0 ? (
                       <div className="space-y-3 sm:space-y-4 text-xs font-medium">
                         <div className="bg-white p-3 border rounded-xl space-y-1.5 text-slate-500 shadow-xs">
                           <div><strong>Selected Carrier Runs:</strong> {selectedBillIds.length} Bills Bundled</div>
-                          <div><strong>Billed Client:</strong> <span className="text-slate-900 font-bold ">{selectedParty}</span></div>
+                          <div><strong>Billed Client:</strong> <span className="text-slate-900 font-bold">{selectedParty}</span></div>
                           <div className="pt-2 border-t font-bold text-slate-900 flex justify-between text-xs sm:text-sm">
                             <span>Subtotal Base Net:</span>
                             <span>₹ {bills.filter(b => selectedBillIds.includes(b.id)).reduce((a, b) => a + b.total_amount, 0).toLocaleString("en-IN")}</span>
@@ -999,7 +920,7 @@ export default function GenerationsHub() {
               </motion.div>
             )}
 
-            {/* TAB 3: TAX INVOICES ARCHIVE - Responsive */}
+            {/* TAB 3: TAX INVOICES ARCHIVE */}
             {activeTabState === "invoices" && (
               <motion.div key="invoices-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
                 <div className="border-b border-neutral-100 pb-3">
@@ -1007,15 +928,30 @@ export default function GenerationsHub() {
                   <p className="text-[10px] sm:text-xs text-slate-400">Print or view historical compliance structures. Pairs multiple freight runs under unified invoices.</p>
                 </div>
 
+                {/* Newly Added Company Dropdown Filter Matrix */}
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-neutral-50 p-3 rounded-xl border w-full sm:w-max mb-2">
+                  <label className="text-[10px] sm:text-xs font-bold uppercase text-slate-500 whitespace-nowrap">Filter Invoices By Company:</label>
+                  <select 
+                    value={selectedInvoiceParty} 
+                    onChange={e => setSelectedInvoiceParty(e.target.value)} 
+                    className="bg-white border border-neutral-200 p-2 rounded-lg text-xs font-bold text-slate-700 outline-none w-full sm:w-auto"
+                  >
+                    <option value="">-- View All Corporate Invoices --</option>
+                    {invoicedParties.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {invoices.length === 0 ? (
-                    <div className="text-xs text-slate-400 italic text-center col-span-2 py-12 bg-neutral-50 rounded-xl border">No invoices generated inside local repositories yet.</div>
-                  ) : invoices.map(inv => (
+                  {filteredInvoicesList.length === 0 ? (
+                    <div className="text-xs text-slate-400 italic text-center col-span-2 py-12 bg-neutral-50 rounded-xl border">
+                      {selectedInvoiceParty ? `No generated invoices found for "${selectedInvoiceParty}".` : "No invoices generated inside local repositories yet."}
+                    </div>
+                  ) : filteredInvoicesList.map(inv => (
                     <div key={inv._id} className="border border-neutral-200 p-4 sm:p-5 rounded-xl bg-neutral-50/30 flex flex-col justify-between space-y-3 sm:space-y-4 shadow-sm hover:border-neutral-300 transition-colors">
                       <div className="flex justify-between items-start flex-wrap gap-2">
                         <div>
                           <span className="font-mono text-[9px] sm:text-[10px] font-bold bg-neutral-200 px-2 py-0.5 rounded text-slate-600">{inv.invoice_number}</span>
-                          <h4 className="font-bold text-sm sm:text-base text-slate-900 mt-2 ">{inv.client_name || "Client"}</h4>
+                          <h4 className="font-bold text-sm sm:text-base text-slate-900 mt-2">{inv.client_name || "Client"}</h4>
                           <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">Tied manifests: {inv.bills_bundled.length} items • Issued: {inv.date}</p>
                         </div>
                         <div className="flex lg:flex-col w-full md:w-fit justify-between gap-2">
@@ -1064,20 +1000,18 @@ export default function GenerationsHub() {
               }}
               className="bg-white w-full max-w-4xl h-max p-4 sm:p-6 md:p-8 rounded-none sm:rounded-xl shadow-2xl space-y-6 text-xs text-slate-800 border print:shadow-none print:border-none print:w-full print:h-auto print:p-4 print:overflow-visible"
             >
-              {/* <div className="flex gap-2 mb-4">
-                <DownloadToPDF
-                  elementId="invoice-print-canvas"
-                  fileName={`Invoice_${activePrintInvoice.invoice_number}.pdf`}
-                  buttonText="Download PDF Directly"
-                  className="bg-sky-600 text-white font-bold px-4 py-2 rounded-lg cursor-pointer"
-                />
-                <button onClick={() => setActivePrintInvoice(null)} className="...">Close</button>
-              </div> */}
 
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-b pb-4 print:hidden">
                 <div className="font-bold text-sm text-slate-700">Tax Invoice Print Engine Canvas</div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => window.print()} className="bg-slate-900 text-white text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg cursor-pointer">Print / Download as PDF</button>
+                  <DownloadToPDF
+                    fileName={`OptimaFlow|${activePrintInvoice.client_name} - Invoice_${activePrintInvoice.invoice_number}.pdf`}
+                    buttonText="Download PDF Directly"
+                    active={activePrintInvoice}
+                    billsData={bills.filter(b => activePrintInvoice.bills_bundled.includes(b.id))}
+                    systemSettings={systemSettings}
+                    className="bg-slate-900 text-white font-bold px-4 py-2 rounded-lg cursor-pointer"
+                  />
                   <button type="button" onClick={() => setActivePrintInvoice(null)} className="bg-neutral-100 border text-slate-600 text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg cursor-pointer">Close Preview</button>
                 </div>
               </div>
@@ -1111,7 +1045,7 @@ export default function GenerationsHub() {
               <div className="bg-neutral-50 border p-3 sm:p-4 rounded-xl text-[10px] sm:text-[11px] grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 print:bg-transparent">
                 <div>
                   <span className="font-bold text-slate-400 uppercase tracking-wider block">Billed Client Party:</span>
-                  <div className="font-black text-slate-900 mt-1 text-sm sm:text-base ">{activePrintInvoice.client_name}</div>
+                  <div className="font-black text-slate-900 mt-1 text-sm sm:text-base">{activePrintInvoice.client_name}</div>
                   <div className="text-slate-500 font-medium mt-0.5 text-[10px]">Corporate Supply Chain Account</div>
                 </div>
                 <div className="sm:text-right">
@@ -1120,7 +1054,6 @@ export default function GenerationsHub() {
                 </div>
               </div>
 
-              {/* Responsive table with horizontal scroll on mobile */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-200">
                   <thead>
@@ -1180,15 +1113,12 @@ export default function GenerationsHub() {
 
               <div className="mt-8 pt-6 border-t border-neutral-200">
                 <div className="bg-neutral-50 rounded-xl p-4 sm:p-5 border border-neutral-100 flex flex-col sm:flex-row gap-6">
-
-                  {/* Left: Banking Details */}
                   <div className="flex-1 space-y-1">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Payment Settlement Details</span>
                     <p className="font-bold text-slate-800 text-sm sm:text-base tracking-tight">{systemSettings.bank_display_details.bankName || "Bank Name"}</p>
                     <p className="text-[10px] text-slate-500 font-medium">Account Holder: {systemSettings.bank_display_details.accountHolder || "-"}</p>
                   </div>
 
-                  {/* Right: Account & IFSC Grid */}
                   <div className="flex flex-col sm:items-end justify-center gap-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] font-bold text-slate-400 uppercase">A/c No:</span>
